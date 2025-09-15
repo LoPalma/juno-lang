@@ -31,6 +31,18 @@ public enum TokenType {
     BREAK,
     CONTINUE,
     STRUCT,
+    IMPORT,
+    MODULE,
+    
+    // Extended type keywords
+    BYTE,
+    UBYTE,
+    SHORT,
+    USHORT,
+    UINT,
+    ULONG,
+    LONG,
+    DOUBLE,
     
     // Operators
     PLUS,           // +

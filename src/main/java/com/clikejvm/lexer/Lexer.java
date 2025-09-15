@@ -28,6 +28,18 @@ public class Lexer {
         KEYWORDS.put("break", TokenType.BREAK);
         KEYWORDS.put("continue", TokenType.CONTINUE);
         KEYWORDS.put("struct", TokenType.STRUCT);
+        KEYWORDS.put("import", TokenType.IMPORT);
+        KEYWORDS.put("module", TokenType.MODULE);
+        
+        // Extended type keywords
+        KEYWORDS.put("byte", TokenType.BYTE);
+        KEYWORDS.put("ubyte", TokenType.UBYTE);
+        KEYWORDS.put("short", TokenType.SHORT);
+        KEYWORDS.put("ushort", TokenType.USHORT);
+        KEYWORDS.put("uint", TokenType.UINT);
+        KEYWORDS.put("ulong", TokenType.ULONG);
+        KEYWORDS.put("long", TokenType.LONG);
+        KEYWORDS.put("double", TokenType.DOUBLE);
     }
     
     private final String source;
@@ -253,8 +265,20 @@ public class Lexer {
             double value = Double.parseDouble(source.substring(start, current));
             addToken(TokenType.FLOAT_LITERAL, value);
         } else {
-            int value = Integer.parseInt(source.substring(start, current));
-            addToken(TokenType.INTEGER_LITERAL, value);
+            String numberStr = source.substring(start, current);
+            try {
+                // Try to parse as int first
+                int intValue = Integer.parseInt(numberStr);
+                addToken(TokenType.INTEGER_LITERAL, intValue);
+            } catch (NumberFormatException e) {
+                try {
+                    // If too large for int, parse as long
+                    long longValue = Long.parseLong(numberStr);
+                    addToken(TokenType.INTEGER_LITERAL, longValue);
+                } catch (NumberFormatException e2) {
+                    throw new RuntimeException("Invalid number literal: " + numberStr + " at line " + line);
+                }
+            }
         }
     }
 
