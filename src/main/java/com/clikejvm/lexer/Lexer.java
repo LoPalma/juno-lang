@@ -1,5 +1,10 @@
 package com.clikejvm.lexer;
 
+import com.clikejvm.error.CompilerError;
+import com.clikejvm.error.ErrorCode;
+import com.clikejvm.error.ErrorCollector;
+import com.clikejvm.error.ErrorReporter;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,28 +48,54 @@ public class Lexer {
     }
     
     private final String source;
+    private final String[] sourceLines;
+    private final String sourceFile;
     private final List<Token> tokens;
+    private final ErrorCollector errorCollector;
     private int start = 0;
     private int current = 0;
     private int line = 1;
     private int column = 1;
 
     public Lexer(String source) {
+        this(source, "<input>");
+    }
+    
+    public Lexer(String source, String sourceFile, ErrorCollector errorCollector) {
         this.source = source;
+        this.sourceFile = sourceFile;
+        this.sourceLines = source.split("\n");
         this.tokens = new ArrayList<>();
+        this.errorCollector = errorCollector;
+    }
+    
+    public Lexer(String source, String sourceFile) {
+        this(source, sourceFile, new ErrorCollector());
     }
 
     public List<Token> tokenize() {
         while (!isAtEnd()) {
             start = current;
-            scanToken();
+            try {
+                scanToken();
+            } catch (CompilerError e) {
+                errorCollector.addError(e);
+                // Continue tokenizing after error
+                if (current == start) {
+                    advance(); // Avoid infinite loop
+                }
+            }
         }
         
         tokens.add(new Token(TokenType.EOF, "", null, line, column));
         return tokens;
     }
+    
+    public ErrorCollector getErrorCollector() {
+        return errorCollector;
+    }
 
-    private void scanToken() {
+    private void scanToken() throws CompilerError {
         char c = advance();
         
         switch (c) {
@@ -175,7 +206,8 @@ public class Lexer {
                 } else if (isAlpha(c)) {
                     identifier();
                 } else {
-                    throw new RuntimeException("Unexpected character: " + c + " at line " + line + ", column " + column);
+                    throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
+                                                line, column, "unexpected character '" + c + "'");
                 }
                 break;
         }
@@ -196,7 +228,7 @@ public class Lexer {
         }
     }
 
-    private void string() {
+    private void string() throws CompilerError {
         StringBuilder value = new StringBuilder();
         
         while (peek() != '"' && !isAtEnd()) {
@@ -221,51 +253,117 @@ public class Lexer {
         }
 
         if (isAtEnd()) {
-            throw new RuntimeException("Unterminated string at line " + line);
+            // Find the line where the string started
+            int startLine = 1;
+            int startColumn = 1;
+            for (int i = 0; i < start; i++) {
+                if (source.charAt(i) == '\n') {
+                    startLine++;
+                    startColumn = 1;
+                } else {
+                    startColumn++;
+                }
+            }
+            
+            // Report error but add a partial string token for recovery
+            throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
+                                        startLine, startColumn, "unterminated string literal", 
+                                        startColumn, 1);
         }
 
         advance(); // consume closing quote
         addToken(TokenType.STRING_LITERAL, value.toString());
     }
 
-    private void character() {
-        char value;
+    private void character() throws CompilerError {
+        StringBuilder content = new StringBuilder();
+        int startLine = line;
+        int startColumn = column - 1; // Adjust for the opening quote
         
-        if (peek() == '\\') {
-            advance(); // consume backslash
-            char escaped = advance();
-            switch (escaped) {
-                case 'n': value = '\n'; break;
-                case 't': value = '\t'; break;
-                case 'r': value = '\r'; break;
-                case '\\': value = '\\'; break;
-                case '\'': value = '\''; break;
-                default: value = escaped; break;
+        // Read everything until closing quote or end of file
+        while (peek() != '\'' && !isAtEnd()) {
+            if (peek() == '\n') {
+                line++;
+                column = 1;
             }
-        } else {
-            value = advance();
+            if (peek() == '\\') {
+                advance(); // consume backslash
+                if (isAtEnd()) break;
+                char escaped = advance();
+                switch (escaped) {
+                    case 'n': content.append('\n'); break;
+                    case 't': content.append('\t'); break;
+                    case 'r': content.append('\r'); break;
+                    case '\\': content.append('\\'); break;
+                    case '\'': content.append('\''); break;
+                    default: content.append(escaped); break;
+                }
+            } else {
+                content.append(advance());
+            }
         }
 
-        if (peek() != '\'') {
-            throw new RuntimeException("Unterminated character literal at line " + line);
+        // Check if we reached end of file without closing quote
+        if (isAtEnd()) {
+            throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
+                                        startLine, startColumn, "unterminated character literal", 
+                                        startColumn, 1);
         }
+        
         advance(); // consume closing quote
         
-        addToken(TokenType.CHAR_LITERAL, value);
+        // Validate character literal length
+        if (content.length() == 0) {
+            throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
+                                        startLine, startColumn, "empty character literal", 
+                                        startColumn, current - start);
+        } else if (content.length() > 1) {
+            throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
+                                        startLine, startColumn, "character literal too long (contains " + content.length() + " characters)", 
+                                        startColumn, current - start);
+        }
+        
+        addToken(TokenType.CHAR_LITERAL, content.charAt(0));
     }
 
-    private void number() {
+    private void number() throws CompilerError {
+        boolean hasDecimal = false;
+        
         while (isDigit(peek())) advance();
 
         // Look for decimal point
         if (peek() == '.' && isDigit(peekNext())) {
+            hasDecimal = true;
             advance(); // consume '.'
             while (isDigit(peek())) advance();
             
-            double value = Double.parseDouble(source.substring(start, current));
-            addToken(TokenType.FLOAT_LITERAL, value);
+            // Check for additional decimal points (invalid)
+            if (peek() == '.' && isDigit(peekNext())) {
+                // Found another decimal point - this is an error
+                int errorStart = column - 1;
+                while (peek() == '.' || isDigit(peek())) {
+                    advance(); // consume the malformed part
+                }
+                
+                String invalidNumber = source.substring(start, current);
+                throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
+                                            line, start, "invalid number literal '" + invalidNumber + "' (multiple decimal points)", 
+                                            start, invalidNumber.length());
+            }
+        }
+        
+        String numberStr = source.substring(start, current);
+        
+        if (hasDecimal) {
+            try {
+                double value = Double.parseDouble(numberStr);
+                addToken(TokenType.FLOAT_LITERAL, value);
+            } catch (NumberFormatException e) {
+                throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
+                                            line, start, "invalid float literal '" + numberStr + "'", 
+                                            start, numberStr.length());
+            }
         } else {
-            String numberStr = source.substring(start, current);
             try {
                 // Try to parse as int first
                 int intValue = Integer.parseInt(numberStr);
@@ -276,7 +374,9 @@ public class Lexer {
                     long longValue = Long.parseLong(numberStr);
                     addToken(TokenType.INTEGER_LITERAL, longValue);
                 } catch (NumberFormatException e2) {
-                    throw new RuntimeException("Invalid number literal: " + numberStr + " at line " + line);
+                    throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
+                                                line, start, "invalid number literal '" + numberStr + "'", 
+                                                start, numberStr.length());
                 }
             }
         }
