@@ -31,6 +31,7 @@ public enum TokenType {
     BREAK,
     CONTINUE,
     STRUCT,
+    PUBLIC,
     IMPORT,
     MODULE,
     

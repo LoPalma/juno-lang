@@ -10,14 +10,9 @@ int factorial(int n) {
     }
 }
 
-int main() {
+void main() {
     int number = 5;
     int result = factorial(number);
     
-    io.print("Factorial of ");
-    io.print(number);
-    io.print(" is ");
-    io.print(result);
-    
-    return 0;
+    io.print("Factorial of " ^^ string(number) ^^ "is " ^^ string(result));
 }

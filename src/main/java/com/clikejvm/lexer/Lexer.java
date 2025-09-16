@@ -33,6 +33,7 @@ public class Lexer {
         KEYWORDS.put("break", TokenType.BREAK);
         KEYWORDS.put("continue", TokenType.CONTINUE);
         KEYWORDS.put("struct", TokenType.STRUCT);
+        KEYWORDS.put("public", TokenType.PUBLIC);
         KEYWORDS.put("import", TokenType.IMPORT);
         KEYWORDS.put("module", TokenType.MODULE);
         

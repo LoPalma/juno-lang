@@ -1,0 +1,289 @@
+/* C-like JVM Language Grammar - Orthodox BNF */
+/* Complete BNF specification with proper rules */
+/* File extension: .cl (C-Like) */
+
+/* PROGRAM STRUCTURE */
+
+<program>           ::= <declaration_list>
+                      | /* empty */
+
+<declaration_list>  ::= <declaration>
+                      | <declaration_list> <declaration>
+
+<declaration>       ::= <module_declaration>
+                      | <import_declaration> 
+                      | <function_declaration>
+                      | <variable_declaration>
+                      | <struct_declaration>
+                      | <public_declaration>
+
+/* MODULE SYSTEM */
+
+<module_declaration> ::= "module" <identifier> ";"
+
+<import_declaration> ::= "import" <qualified_identifier> ";"
+                       | "import" <qualified_identifier> <import_list> ";"
+
+<import_list>       ::= "{" <identifier_list> "}"
+
+<qualified_identifier> ::= <identifier>
+                         | <qualified_identifier> "." <identifier>
+
+<identifier_list>   ::= <identifier>
+                      | <identifier_list> "," <identifier>
+
+/* TYPE SYSTEM */
+
+<type>              ::= <primitive_type>
+                      | <array_type>
+                      | <struct_type>
+
+<primitive_type>    ::= <signed_integer_type>
+                      | <unsigned_integer_type>
+                      | <floating_point_type>
+                      | <other_type>
+
+<signed_integer_type> ::= "byte"
+                        | "short"
+                        | "int"
+                        | "long"
+
+<unsigned_integer_type> ::= "ubyte"
+                          | "ushort"
+                          | "uint"
+                          | "ulong"
+
+<floating_point_type> ::= "float"
+                        | "double"
+
+<other_type>        ::= "char"
+                      | "string"
+                      | "bool"
+                      | "void"
+
+<array_type>        ::= <type> "[" "]"
+                      | <type> "[" <integer_literal> "]"
+
+<struct_type>       ::= <identifier>
+
+/* DECLARATIONS */
+
+<function_declaration> ::= <type> <identifier> "(" ")" <block_statement>
+                         | <type> <identifier> "(" <parameter_list> ")" <block_statement>
+
+<parameter_list>    ::= <parameter>
+                      | <parameter_list> "," <parameter>
+
+<parameter>         ::= <type> <identifier>
+
+<variable_declaration> ::= <type> <identifier> ";"
+                         | <type> <identifier> "=" <expression> ";"
+
+<struct_declaration> ::= "struct" <identifier> "{" "}"
+                       | "struct" <identifier> "{" <struct_member_list> "}"
+
+<struct_member_list> ::= <struct_member>
+                       | <struct_member_list> <struct_member>
+
+<struct_member>     ::= <type> <identifier> ";"
+
+<public_declaration> ::= "public" <function_declaration>
+                       | "public" <variable_declaration>
+                       | "public" <struct_declaration>
+
+/* STATEMENTS */
+
+<statement>         ::= <block_statement>
+                      | <expression_statement>
+                      | <if_statement>
+                      | <while_statement>
+                      | <for_statement>
+                      | <return_statement>
+                      | <break_statement>
+                      | <continue_statement>
+                      | <variable_declaration>
+
+<statement_list>    ::= <statement>
+                      | <statement_list> <statement>
+
+<block_statement>   ::= "{" "}"
+                      | "{" <statement_list> "}"
+
+<expression_statement> ::= <expression> ";"
+
+<if_statement>      ::= "if" "(" <expression> ")" <statement>
+                      | "if" "(" <expression> ")" <statement> "else" <statement>
+
+<while_statement>   ::= "while" "(" <expression> ")" <statement>
+
+<for_statement>     ::= "for" "(" ";" ";" ")" <statement>
+                      | "for" "(" <for_init> ";" ";" ")" <statement>
+                      | "for" "(" ";" <expression> ";" ")" <statement>
+                      | "for" "(" ";" ";" <expression> ")" <statement>
+                      | "for" "(" <for_init> ";" <expression> ";" ")" <statement>
+                      | "for" "(" <for_init> ";" ";" <expression> ")" <statement>
+                      | "for" "(" ";" <expression> ";" <expression> ")" <statement>
+                      | "for" "(" <for_init> ";" <expression> ";" <expression> ")" <statement>
+
+<for_init>          ::= <variable_declaration>
+                      | <expression>
+
+<return_statement>  ::= "return" ";"
+                      | "return" <expression> ";"
+
+<break_statement>   ::= "break" ";"
+
+<continue_statement> ::= "continue" ";"
+
+/* EXPRESSIONS */
+
+<expression>        ::= <assignment_expression>
+
+<assignment_expression> ::= <logical_or_expression>
+                          | <logical_or_expression> "=" <assignment_expression>
+
+<logical_or_expression> ::= <logical_and_expression>
+                          | <logical_or_expression> "||" <logical_and_expression>
+
+<logical_and_expression> ::= <bitwise_or_expression>
+                           | <logical_and_expression> "&&" <bitwise_or_expression>
+
+<bitwise_or_expression> ::= <bitwise_xor_expression>
+                          | <bitwise_or_expression> "|" <bitwise_xor_expression>
+
+<bitwise_xor_expression> ::= <bitwise_and_expression>
+                           | <bitwise_xor_expression> "^" <bitwise_and_expression>
+
+<bitwise_and_expression> ::= <equality_expression>
+                           | <bitwise_and_expression> "&" <equality_expression>
+
+<equality_expression> ::= <relational_expression>
+                        | <equality_expression> "==" <relational_expression>
+                        | <equality_expression> "!=" <relational_expression>
+
+<relational_expression> ::= <shift_expression>
+                          | <relational_expression> "<" <shift_expression>
+                          | <relational_expression> "<=" <shift_expression>
+                          | <relational_expression> ">" <shift_expression>
+                          | <relational_expression> ">=" <shift_expression>
+
+<shift_expression>  ::= <concatenation_expression>
+                      | <shift_expression> "<<" <concatenation_expression>
+                      | <shift_expression> ">>" <concatenation_expression>
+
+<concatenation_expression> ::= <additive_expression>
+                             | <concatenation_expression> "^^" <additive_expression>
+
+<additive_expression> ::= <multiplicative_expression>
+                        | <additive_expression> "+" <multiplicative_expression>
+                        | <additive_expression> "-" <multiplicative_expression>
+
+<multiplicative_expression> ::= <cast_expression>
+                              | <multiplicative_expression> "*" <cast_expression>
+                              | <multiplicative_expression> "/" <cast_expression>
+                              | <multiplicative_expression> "%" <cast_expression>
+
+<cast_expression>   ::= <unary_expression>
+                      | <type> "(" <unary_expression> ")"
+
+<unary_expression>  ::= <postfix_expression>
+                      | "+" <unary_expression>
+                      | "-" <unary_expression>
+                      | "!" <unary_expression>
+                      | "~" <unary_expression>
+
+<postfix_expression> ::= <primary_expression>
+                       | <postfix_expression> "[" <expression> "]"
+                       | <postfix_expression> "(" ")"
+                       | <postfix_expression> "(" <argument_list> ")"
+                       | <postfix_expression> "." <identifier>
+
+<primary_expression> ::= <literal>
+                       | <identifier>
+                       | <qualified_identifier>
+                       | "(" <expression> ")"
+
+/* LITERALS */
+
+<literal>           ::= <integer_literal>
+                      | <float_literal>
+                      | <character_literal>
+                      | <string_literal>
+                      | <boolean_literal>
+
+<integer_literal>   ::= <decimal_digits>
+                      | <decimal_digits> <integer_suffix>
+
+<decimal_digits>    ::= <digit>
+                      | <decimal_digits> <digit>
+
+<integer_suffix>    ::= "u" | "U" | "l" | "L"
+                      | "u" "l" | "u" "L" | "U" "l" | "U" "L"
+                      | "l" "u" | "l" "U" | "L" "u" | "L" "U"
+
+<float_literal>     ::= <decimal_digits> "." <decimal_digits>
+                      | <decimal_digits> "." <decimal_digits> <float_suffix>
+                      | <decimal_digits> <float_suffix>
+
+<float_suffix>      ::= "f" | "F" | "d" | "D"
+
+<character_literal> ::= "'" <character_content> "'"
+
+<character_content> ::= <escape_sequence>
+                      | <letter>
+                      | <digit>
+                      | " " | "!" | "#" | "$" | "%" | "&" | "(" | ")" | "*"
+                      | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">"
+                      | "?" | "@" | "[" | "]" | "^" | "`" | "{" | "|"
+                      | "}" | "~"
+
+<string_literal>    ::= '"' '"'
+                      | '"' <string_content_list> '"'
+
+<string_content_list> ::= <string_content>
+                        | <string_content_list> <string_content>
+
+<string_content>    ::= <escape_sequence>
+                      | <letter>
+                      | <digit>
+                      | " " | "!" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*"
+                      | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">"
+                      | "?" | "@" | "[" | "\\" | "]" | "^" | "_" | "`" | "{" | "|"
+                      | "}" | "~"
+
+<escape_sequence>   ::= "\\" "n"
+                      | "\\" "t"
+                      | "\\" "r"
+                      | "\\" "\\"
+                      | "\\" "'"
+                      | "\\" '"'
+                      | "\\" "0"
+
+<boolean_literal>   ::= "true" | "false"
+
+/* FUNCTION CALLS */
+
+<argument_list>     ::= <expression>
+                      | <argument_list> "," <expression>
+
+/* LEXICAL ELEMENTS (terminals) */
+
+<identifier>        ::= <letter> <identifier_rest>
+                      | <letter>
+
+<identifier_rest>   ::= <letter>
+                      | <digit>
+                      | "_"
+                      | <identifier_rest> <letter>
+                      | <identifier_rest> <digit>
+                      | <identifier_rest> "_"
+
+<digit>             ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+<letter>            ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
+                      | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
+                      | "u" | "v" | "w" | "x" | "y" | "z"
+                      | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J"
+                      | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
+                      | "U" | "V" | "W" | "X" | "Y" | "Z"
+                      | "_"

@@ -117,11 +117,18 @@ Source files use `.cl` extension (C-Like language)
 - C-style syntax with braces and semicolons
 - Function declarations with parameters and return types
 - Control flow: `if`/`else`, `while`, `for` loops
-- Expressions with operator precedence matching C
+- Expressions with operator precedence matching C (including `^^` concatenation)
 - Single-line (`//`) and block (`/* */`) comments
+- C++-like structs (public-only datatypes)
+- Module system with explicit public declarations
 
 ### Module System
 The language uses a module-based architecture for organizing code and libraries:
+
+**Visibility Rules:**
+- All module members are **private by default**
+- Use `public` keyword to export functions, variables, and types
+- This prevents accidental exports and promotes intentional API design
 
 **Import Syntax:**
 ```c
@@ -144,14 +151,47 @@ import math.{sin, cos, PI}; // Import multiple items
 import io;
 import math;
 
-int main() {
+// Private helper function (not exported)
+int calculate(int x) {
+    return x * 2;
+}
+
+// Public function (can be imported by other modules)
+public int main() {
     uint number = 42u;
-    string message = "Result: ";
+    string message = "Result: " ^^ string(calculate(number));
     io.print(message);
-    io.print(math.sqrt(number));
     return 0;
 }
 ```
+
+### Struct System
+**C++-like Structs (Datatypes, not Classes):**
+```c
+// Define a struct (all fields are public by default)
+struct Point {
+    float x;
+    float y;
+}
+
+// Public struct (can be imported)
+public struct Color {
+    ubyte red;
+    ubyte green; 
+    ubyte blue;
+}
+
+// Usage
+Point p = {3.14f, 2.71f};
+Color red = {255u, 0u, 0u};
+float distance = math.sqrt(p.x * p.x + p.y * p.y);
+```
+
+**Struct Characteristics:**
+- All fields are **public** (no access control within structs)
+- Simple data containers with constructors
+- No methods, inheritance, or complex OOP features
+- Designed for pure data representation
 
 ### Type System Implementation Notes
 
