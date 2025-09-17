@@ -1,0 +1,63 @@
+// Advanced Type System Demonstration
+// Shows optional types, union types, auto/any inference, and type aliases
+
+import io;
+
+// Type aliases for common union types
+type NumberOrString = int|string;
+type OptionalInt = optional int;
+type FlexibleData = string|int|float|bool;
+
+int main() {
+    // Optional types - can be null or the specified type
+    optional int maybeNumber = 42;
+    optional string maybeText;  // defaults to null
+    
+    // Union types - can hold multiple types
+    string|int flexible = "hello";
+    flexible = 123;  // Now holds an int
+    
+    // Type inference with auto (infers type, then fixed)
+    auto inferredInt = 42;          // inferredInt is now int
+    auto inferredString = "world";  // inferredString is now string
+    
+    // Dynamic typing with any (can change types freely)
+    any dynamicValue = 100;
+    dynamicValue = "text";          // OK - any can change types
+    dynamicValue = true;            // OK - any accepts all types
+    
+    // Using type aliases
+    NumberOrString data = "example";
+    data = 999;
+    
+    OptionalInt optNumber = 55;
+    
+    FlexibleData multi = "start";
+    multi = 3.14;
+    multi = false;
+    
+    // Complex optional union types
+    optional string|int|bool complexOptional = "value";
+    complexOptional = 42;
+    complexOptional = true;
+    // complexOptional could also be null
+    
+    // Pointer examples with optional
+    optional auto ptr = nullptr;  // Optional pointer, starts null
+    
+    io.print("Advanced type system demo completed successfully!");
+    
+    return 0;
+}
+
+// Function demonstrating optional parameters
+int processOptional(optional int value) {
+    // In a full implementation, we'd check if value is null
+    return 0;
+}
+
+// Function with union type parameters
+string handleFlexible(string|int data) {
+    // In a full implementation, we'd check the runtime type
+    return "processed";
+}

@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-This is a C-like programming language compiler that targets the JVM. The project implements a complete compilation pipeline from source code (.cl files) to JVM bytecode (.class files), featuring strong static typing, C-style syntax, and modern language constructs.
+This is the Juno programming language compiler that targets the JVM. The project implements a complete compilation pipeline from source code (.juno files) to JVM bytecode (.class files), featuring strong static typing with smart auto type inference, C-style syntax, and modern language constructs.
 
 ## Common Commands
 
@@ -29,17 +29,17 @@ mvn clean
 ### Running the Compiler
 ```bash
 # Clean execution without Maven noise (Recommended)
-./run.sh examples/hello.cl
-./run.sh examples/hello.cl --debug-ast
+./run.sh examples/hello.juno
+./run.sh examples/hello.juno --debug-ast
 
 # Alternative Maven execution with reduced output
-./mvn-run.sh examples/hello.cl
+./mvn-run.sh examples/hello.juno
 
 # Traditional Maven execution (verbose)
-mvn exec:java -Dexec.args="examples/hello.cl"
+mvn exec:java -Dexec.args="examples/hello.juno"
 
 # Direct JAR execution (after mvn package)
-java -jar target/clike-jvm-lang-1.0.0-SNAPSHOT.jar examples/hello.cl
+java -jar target/juno-1.0.0-SNAPSHOT.jar examples/hello.juno
 ```
 
 ### Development Workflow
@@ -48,10 +48,10 @@ java -jar target/clike-jvm-lang-1.0.0-SNAPSHOT.jar examples/hello.cl
 mvn test -Dtest=LexerTest
 
 # Compile and run in one command
-mvn compile exec:java -Dexec.args="path/to/source.cl"
+mvn compile exec:java -Dexec.args="path/to/source.juno"
 
 # Debug compilation phases
-mvn exec:java -Dexec.args="examples/hello.cl" -Dexec.args="-verbose"
+mvn exec:java -Dexec.args="examples/hello.juno" -Dexec.args="-verbose"
 ```
 
 ## Architecture Overview
@@ -59,10 +59,10 @@ mvn exec:java -Dexec.args="examples/hello.cl" -Dexec.args="-verbose"
 ### Compilation Pipeline
 The compiler follows a traditional 4-phase pipeline:
 
-1. **Lexical Analysis** (`com.clikejvm.lexer.Lexer`): Converts source code into tokens
-2. **Parsing** (`com.clikejvm.parser.Parser`): Transforms tokens into Abstract Syntax Tree (AST)
-3. **Type Checking** (`com.clikejvm.types.TypeChecker`): Validates types and semantics
-4. **Code Generation** (`com.clikejvm.codegen.CodeGenerator`): Generates JVM bytecode using ASM
+1. **Lexical Analysis** (`com.junoikejvm.lexer.Lexer`): Converts source code into tokens
+2. **Parsing** (`com.junoikejvm.parser.Parser`): Transforms tokens into Abstract Syntax Tree (AST)
+3. **Type Checking** (`com.junoikejvm.types.TypeChecker`): Validates types and semantics
+4. **Code Generation** (`com.junoikejvm.codegen.CodeGenerator`): Generates JVM bytecode using ASM
 
 ### Key Architectural Patterns
 
@@ -73,55 +73,92 @@ The compiler follows a traditional 4-phase pipeline:
 **Recursive Descent Parsing**: Parser uses recursive descent approach following the grammar specified in README.md, building AST nodes that maintain source location information for error reporting.
 
 ### Package Structure
-- `com.clikejvm.lexer`: Tokenization (Lexer, Token, TokenType)
-- `com.clikejvm.parser`: Syntax analysis (Parser)
-- `com.clikejvm.ast`: AST node hierarchy with visitor pattern
-- `com.clikejvm.types`: Type system and semantic analysis
-- `com.clikejvm.codegen`: JVM bytecode generation using ASM library
+- `com.junoikejvm.lexer`: Tokenization (Lexer, Token, TokenType)
+- `com.junoikejvm.parser`: Syntax analysis (Parser)
+- `com.junoikejvm.ast`: AST node hierarchy with visitor pattern
+- `com.junoikejvm.types`: Type system and semantic analysis
+- `com.junoikejvm.codegen`: JVM bytecode generation using ASM library
 
 ### Current Implementation Status
 - ✅ **Lexer**: Complete C-like token support with all type keywords and module system tokens
 - ✅ **AST Structure**: Complete node hierarchy with visitor pattern
-- ✅ **Parser**: Core parsing implemented with comprehensive statement and expression support
-  - ✅ Import statements (full module and selective imports)
+- ✅ **Parser**: Complete modern syntax parsing with comprehensive language support
+  - ✅ Import statements (full module and selective imports) 
   - ✅ Function declarations with parameters and body blocks
   - ✅ Variable declarations with optional initialization
   - ✅ Control flow statements (if/else, while, return)
   - ✅ Expression parsing (literals, identifiers, calls, qualified identifiers)
   - ✅ Block statements with proper nesting and error recovery
   - ✅ All primitive types integration (including unsigned types)
-  - 🚧 Advanced expressions (comparison operators, string concatenation)
+  - ✅ **Module declarations** (`module name { public/private functions }`)
+  - ✅ **For-in loops** (`for type var = init in iterable { ... }`)
+  - ✅ **Parentheses-less control flow** (`if condition {}`, `while condition {}`)
+  - ✅ **Complete operator precedence hierarchy** (assignment → logical → equality → relational → additive → multiplicative → unary)
+  - ✅ **String concatenation operator** (`^^`) parsing framework
+  - ✅ **All comparison operators** (<, >, <=, >=, ==, !=) parsing framework
+  - ✅ **Advanced Type System** - comprehensive modern type features:
+    - ✅ Optional types (`optional int x;`)
+    - ✅ Union types (`string|int x;`)
+    - ✅ Type inference (`auto x = value;`)
+    - ✅ Dynamic typing (`any x;`)
+    - ✅ Type aliases (`type Name = type1|type2;`)
+    - ✅ Complex type combinations (`optional string|int|bool`)
+  - 🚧 Expression error recovery (minor parsing edge cases)
 - 🚧 **Type Checker**: Framework exists, comprehensive type system with unsigned types needed
 - 🚧 **Code Generator**: Framework exists, ASM bytecode emission with unsigned arithmetic handling needed
 
 ## Language Specifications
 
 ### File Extension
-Source files use `.cl` extension (C-Like language)
+Source files use `.juno` extension (Juno programming language)
 
-### Primitive Types
+### Advanced Type System
 
-**Signed Integer Types:**
+**Primitive Types:**
+
+*Signed Integer Types:*
 - `byte` (8-bit signed integer, -128 to 127)
 - `short` (16-bit signed integer)
 - `int` (32-bit signed integer)
 - `long` (64-bit signed integer)
 
-**Unsigned Integer Types:**
+*Unsigned Integer Types:*
 - `ubyte` (8-bit unsigned integer, 0 to 255)
 - `ushort` (16-bit unsigned integer)
 - `uint` (32-bit unsigned integer)
 - `ulong` (64-bit unsigned integer)
 
-**Floating Point Types:**
+*Floating Point Types:*
 - `float` (32-bit IEEE 754 floating point)
 - `double` (64-bit IEEE 754 floating point)
 
-**Other Types:**
+*Other Types:*
 - `char` (UTF-16 character, compatible with JVM char)
 - `string` (UTF-16 string with C++/D-like semantics, immutable by default)
 - `bool` (boolean true/false)
 - `void` (no return type)
+
+**Advanced Type Features:**
+
+*Optional Types:*
+- `optional int x;` - can hold int value or null
+- `optional auto ptr = nullptr;` - optional pointers for null safety
+- Prevents null pointer errors by making nullability explicit
+
+*Union Types:*
+- `string|int x;` - can hold either string or int
+- `optional string|int|bool data;` - optional union types
+- Tagged unions with runtime type checking
+
+*Type Inference:*
+- `auto x = 42;` - infers type (int), then fixed
+- `any x = 5; x = "text";` - dynamic typing, can change types
+- `auto` requires initialization; `any` allows uninitialized declarations
+
+*Type Aliases:*
+- `type NumberOrString = int|string;`
+- `type OptionalInt = optional int;`
+- Simplifies complex type declarations
 
 - Strong static typing with explicit declarations required
 
@@ -222,7 +259,7 @@ float distance = math.sqrt(p.x * p.x + p.y * p.y);
 - Module names map to JVM package/class structure (e.g., `io` → `io.IoModule`)
 - Qualified calls (`io.print`) compile to static method invocations
 - Import statements create symbol table entries for name resolution
-- Standard library modules are provided as compiled .class files in classpath
+- Standard library modules are provided as compiled .junoass files in classpath
 
 **Lexer Integration:**
 - ✅ All type keywords added to `TokenType.java` and `Lexer.java` keyword map
@@ -234,12 +271,12 @@ float distance = math.sqrt(p.x * p.x + p.y * p.y);
 
 When working on this codebase, the main areas needing development are:
 
-1. **Advanced Expression Parsing**: Add support for comparison operators (<=, >=, ==, !=), string concatenation (^^), and complete operator precedence
-2. **Type Checker Implementation**: Implement comprehensive type checking with unsigned arithmetic validation and type compatibility checks
-3. **Module System**: Implement module resolution, symbol tables, and standard library integration
-4. **Code Generation**: Complete JVM bytecode generation with module call support and unsigned arithmetic handling
-5. **Standard Library Modules**: Implement core modules (`io`, `math`, `string`) as JVM classes
-6. **For Loop Support**: Add parsing and semantics for C-style for loops
+1. **Expression Operator Precedence**: Fix comparison operators (<=, >=, ==, !=, <, >) parsing and precedence issues
+2. **String Concatenation**: Implement `^^` operator parsing and semantics
+3. **Type Checker Implementation**: Implement comprehensive type checking with unsigned arithmetic validation and type compatibility checks
+4. **Module System**: Implement module resolution, symbol tables, and standard library integration  
+5. **Code Generation**: Complete JVM bytecode generation with module call support and unsigned arithmetic handling
+6. **Standard Library Modules**: Implement core modules (`io`, `math`, `string`) as JVM classes
 7. **Struct System**: Implement struct declarations and usage
 
 ## Testing Strategy
@@ -247,7 +284,7 @@ When working on this codebase, the main areas needing development are:
 The project uses JUnit 5 with AssertJ for testing. When adding tests:
 - Place test files in `src/test/java/com/clikejvm/`
 - Test each compilation phase independently
-- Use example `.cl` files for integration testing
+- Use example `.juno` files for integration testing
 - Focus on error handling and edge cases
 
 ## Dependencies

@@ -1,0 +1,39 @@
+// Modern C-like language syntax demonstration
+import io;
+
+// Module declaration with public/private functions
+module utils {
+    // Private helper function  
+    int helper(int x) {
+        return x * 2;
+    }
+    
+    // Public function available to other modules
+    public int calculate(int value) {
+        return helper(value) + 1;
+    }
+}
+
+// Main function with parentheses-less control flow
+int main() {
+    int count = 5;
+    
+    // Parentheses-less if statement
+    if true {
+        io.print("Starting program...");
+    }
+    
+    // Parentheses-less while loop  
+    while count > 0 {
+        io.print("Counting down...");
+        count = count - 1;
+    }
+    
+    // For-in loop with initialization
+    for int i = 0 in Array.range(3) {
+        int result = utils.calculate(i);
+        io.print("Processing item");
+    }
+    
+    return 0;
+}

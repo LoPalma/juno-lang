@@ -10,7 +10,7 @@ if [ $# -lt 1 ]; then
 fi
 
 # Check if JAR exists, build if needed
-JAR_FILE="target/clike-jvm-lang-1.0.0-SNAPSHOT.jar"
+JAR_FILE="target/juno-1.0.0-SNAPSHOT.jar"
 if [ ! -f "$JAR_FILE" ]; then
     echo "Building project..."
     mvn package -q >/dev/null 2>&1

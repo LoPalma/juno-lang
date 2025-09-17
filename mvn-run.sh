@@ -10,7 +10,7 @@ if [ $# -lt 1 ]; then
 fi
 
 # Run with Maven but suppress most noise
-MAVEN_OPTS="-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" \
+MAVEN_OPTS="-Dorg.slf4j.simpleLogger.log.org.apache.maven.junoi.transfer.Slf4jMavenTransferListener=warn" \
 mvn exec:java \
     -Dexec.args="$*" \
     -q \

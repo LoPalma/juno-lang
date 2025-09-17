@@ -1,10 +1,10 @@
-# C-like JVM Language
+# Juno Programming Language
 
-An interpreted C-like strongly typed programming language that targets the JVM.
+A modern C-like programming language with advanced type safety, targeting the JVM.
 
 ## Project Overview
 
-This project implements a complete compiler/interpreter for a C-like programming language that generates JVM bytecode. The language features strong static typing, C-style syntax, and modern language constructs while leveraging the JVM's runtime capabilities.
+This project implements a complete compiler for the Juno programming language that generates JVM bytecode. Juno features strong static typing with smart type inference, C-style syntax, and modern language constructs while leveraging the JVM's runtime capabilities.
 
 ## Features
 
@@ -28,7 +28,7 @@ This project implements a complete compiler/interpreter for a C-like programming
 
 ```
 src/
-├── main/java/com/clikejvm/
+├── main/java/com/juno/
 │   ├── Main.java                    # Main entry point
 │   ├── lexer/                       # Lexical analysis
 │   │   ├── Lexer.java              # Tokenizer implementation
@@ -49,7 +49,7 @@ src/
 │   │   └── TypeChecker.java        # Type checking logic
 │   └── codegen/                     # Code generation
 │       └── CodeGenerator.java      # JVM bytecode generation
-├── test/java/com/clikejvm/         # Unit tests
+├── test/java/com/juno/         # Unit tests
 examples/                            # Example programs
 docs/                               # Additional documentation
 ```
@@ -78,10 +78,10 @@ mvn clean
 ### Running the Compiler
 ```bash
 # Using Maven exec plugin
-mvn exec:java -Dexec.args="examples/hello.cl"
+mvn exec:java -Dexec.args="examples/hello.juno"
 
 # Using the packaged JAR
-java -jar target/clike-jvm-lang-1.0.0-SNAPSHOT.jar examples/hello.cl
+java -jar target/juno-1.0.0-SNAPSHOT.jar examples/hello.juno
 ```
 
 ## Language Specification
@@ -119,7 +119,7 @@ literal        = INTEGER | FLOAT | STRING | CHAR | "true" | "false"
 
 #### Hello World
 ```c
-// hello.cl
+// hello.juno
 int main() {
     string message = "Hello, World!";
     print(message);
@@ -129,7 +129,7 @@ int main() {
 
 #### Factorial Function
 ```c
-// factorial.cl
+// factorial.juno
 int factorial(int n) {
     if (n <= 1) {
         return 1;
@@ -147,7 +147,7 @@ int main() {
 
 #### Fibonacci Sequence
 ```c
-// fibonacci.cl
+// fibonacci.juno
 int fibonacci(int n) {
     if (n <= 1) {
         return n;
