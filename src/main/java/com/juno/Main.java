@@ -21,22 +21,27 @@ import java.nio.file.Paths;
 public class Main {
     public static void main(String[] args) {
         if (args.length < 1 || args.length > 2) {
-            System.err.println("Usage: java -jar clike-jvm-lang.jar <source-file> [--debug-ast]");
+            System.err.println("Usage: junoc [-j] <source-file>");
             System.exit(1);
         }
 
         String sourceFile = args[0];
         boolean debugAST = args.length > 1 && "--debug-ast".equals(args[1]);
         
+        // Check for Jasmin generation flag from environment
+        boolean generateJasmin = "true".equals(System.getenv("JUNO_GENERATE_JASMIN"));
+        
         try {
             ErrorCollector errorCollector = new ErrorCollector();
-            compile(sourceFile, errorCollector, debugAST);
+            compile(sourceFile, errorCollector, debugAST, generateJasmin);
             
             // Print all errors and warnings
             errorCollector.printAll();
             
-            // Print summary
-            System.out.println(errorCollector.getSummary());
+            // Only print summary if compilation completed
+            if (!errorCollector.hasErrors()) {
+                System.out.println("Compilation completed successfully.");
+            }
             
             // Exit with error code if there were errors
             if (errorCollector.hasErrors()) {
@@ -44,12 +49,14 @@ public class Main {
             }
         } catch (Exception e) {
             System.err.println("Internal compiler error: " + e.getMessage());
-            e.printStackTrace();
+            if (System.getenv("JUNO_DEBUG") != null) {
+                e.printStackTrace();
+            }
             System.exit(1);
         }
     }
 
-    private static void compile(String sourceFile, ErrorCollector errorCollector, boolean debugAST) throws IOException {
+    private static void compile(String sourceFile, ErrorCollector errorCollector, boolean debugAST, boolean generateJasmin) throws IOException {
         Path sourcePath = Paths.get(sourceFile);
         if (!Files.exists(sourcePath)) {
             throw new IllegalArgumentException("Source file not found: " + sourceFile);
@@ -103,11 +110,13 @@ public class Main {
         
         try {
             CodeGenerator codeGen = new CodeGenerator();
-            String outputClass = sourceFile.replace(".juno", "");
-            codeGen.generate(program, outputClass);
+            String outputClass = sourceFile.replace(".juno", "").replace(".cl", "");
+            codeGen.generate(program, outputClass, generateJasmin);
         } catch (Exception e) {
             System.err.println("Code generation failed: " + e.getMessage());
-            e.printStackTrace();
+            if (System.getenv("JUNO_DEBUG") != null) {
+                e.printStackTrace();
+            }
             System.exit(1);
         }
     }

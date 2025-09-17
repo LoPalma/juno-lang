@@ -1,0 +1,29 @@
+// Working complex Juno program with current features
+int globalA = 10;
+int globalB = 20;
+float pi = 3.14159;
+
+public int multiply(int x, int y) {
+    int result = x * y;
+    return result;
+}
+
+public int add(int a, int b, int c) {
+    int temp1 = a + b;
+    int temp2 = temp1 + c;
+    return temp2;
+}
+
+public int complexCalculation(int base) {
+    int doubled = multiply(base, 2);
+    int added = add(doubled, globalA, globalB);
+    return added;
+}
+
+int main() {
+    int input = 5;
+    int step1 = multiply(input, 3);
+    int step2 = add(step1, globalA, globalB);
+    int final = complexCalculation(step2);
+    return final;
+}

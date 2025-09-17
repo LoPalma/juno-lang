@@ -1,0 +1,28 @@
+// Complex Juno program demonstrating multiple features
+int globalCounter = 100;
+bool isDebugMode = true;
+
+public int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+public bool isEven(int num) {
+    return (num % 2) == 0;
+}
+
+int main() {
+    int number = 6;
+    int fact = factorial(number);
+    bool even = isEven(fact);
+    
+    int result = fact + globalCounter;
+    
+    if (even) {
+        return result * 2;
+    } else {
+        return result + 1;
+    }
+}

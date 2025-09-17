@@ -39,6 +39,10 @@ public enum TokenType {
     AUTO,
     ANY,
     TYPE,
+    VARIANT,
+    MATCH,
+    CASE,
+    DEFAULT,
     
     // Extended type keywords
     BYTE,

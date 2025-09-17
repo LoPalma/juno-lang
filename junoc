@@ -1,0 +1,71 @@
+#!/bin/bash
+# Juno Compiler (junoc) - Fast executable wrapper
+# Usage: junoc [-j] <source-file.cl|.juno>
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JAR_FILE="$SCRIPT_DIR/junoc-standalone.jar"
+LIB_DIR="$SCRIPT_DIR/lib"
+
+# Build classpath with all ASM dependencies
+CLASSPATH="$JAR_FILE"
+for jar in "$LIB_DIR"/*.jar; do
+    if [[ -f "$jar" ]]; then
+        CLASSPATH="$CLASSPATH:$jar"
+    fi
+done
+
+# Parse command line arguments
+GENERATE_JASMIN=false
+SOURCE_FILE=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -j|--jasmin)
+            GENERATE_JASMIN=true
+            shift
+            ;;
+        -h|--help)
+            echo "Juno Compiler (junoc)"
+            echo "Usage: junoc [-j] <source-file>"
+            echo ""
+            echo "Options:"
+            echo "  -j, --jasmin    Generate Jasmin assembly (.j) files"
+            echo "  -h, --help      Show this help message"
+            echo ""
+            echo "Supported file extensions: .cl, .juno"
+            exit 0
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            if [[ -z "$SOURCE_FILE" ]]; then
+                SOURCE_FILE="$1"
+            else
+                echo "Error: Multiple source files not supported" >&2
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+if [[ -z "$SOURCE_FILE" ]]; then
+    echo "Error: No source file specified" >&2
+    echo "Usage: junoc [-j] <source-file>" >&2
+    exit 1
+fi
+
+if [[ ! -f "$SOURCE_FILE" ]]; then
+    echo "Error: Source file '$SOURCE_FILE' not found" >&2
+    exit 1
+fi
+
+# Set environment variable for Jasmin generation
+if [[ "$GENERATE_JASMIN" == true ]]; then
+    export JUNO_GENERATE_JASMIN=true
+fi
+
+# Execute the compiler
+exec java -cp "$CLASSPATH" com.juno.Main "$SOURCE_FILE"

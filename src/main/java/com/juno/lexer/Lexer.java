@@ -41,6 +41,10 @@ public class Lexer {
         KEYWORDS.put("auto", TokenType.AUTO);
         KEYWORDS.put("any", TokenType.ANY);
         KEYWORDS.put("type", TokenType.TYPE);
+        KEYWORDS.put("variant", TokenType.VARIANT);
+        KEYWORDS.put("match", TokenType.MATCH);
+        KEYWORDS.put("case", TokenType.CASE);
+        KEYWORDS.put("default", TokenType.DEFAULT);
         
         // Extended type keywords
         KEYWORDS.put("byte", TokenType.BYTE);
