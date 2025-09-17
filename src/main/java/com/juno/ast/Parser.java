@@ -148,7 +148,7 @@ public class Parser {
     }
     
     private Expression parseAssignment() throws CompilerError {
-        Expression expr = parseComparison();
+        Expression expr = parseLogicalOr();
         
         if (match(TokenType.ASSIGN)) {
             Token equals = previous();
@@ -246,6 +246,11 @@ public class Parser {
     }
     
     private Expression parseUnary() throws CompilerError {
+        // Cast expressions: type<expression> (high precedence like unary)
+        if (isTypeToken(peek().getType()) && isCastExpression()) {
+            return parseCastExpression();
+        }
+        
         if (match(TokenType.MINUS, TokenType.PLUS, TokenType.LOGICAL_NOT)) {
             Token operator = previous();
             Expression right = parseUnary();
@@ -283,6 +288,14 @@ public class Parser {
     }
     
     private Expression parsePrimary() throws CompilerError {
+        // Cast expressions: <type>(expression) - restore original syntax
+        if (check(TokenType.LESS_THAN)) {
+            // Look ahead to see if this looks like a cast
+            if (isOldCastExpression()) {
+                return parseOldCastExpression();
+            }
+        }
+        
         // Boolean literals
         if (match(TokenType.TRUE)) {
             Token token = previous();
@@ -344,6 +357,66 @@ public class Parser {
         }
         
         throw error(ErrorCode.BAD_SYNTAX, peek(), "Expected expression.");
+    }
+    
+    /**
+     * Check if the current position looks like a cast expression by looking ahead.
+     * Cast syntax: <type>(expression)
+     */
+    private boolean isCastExpression() {
+        // Lookahead for: TYPE '<'
+        int saved = current;
+        try {
+            if (!isTypeToken(peek().getType())) return false;
+            advance(); // consume type token
+            return check(TokenType.LESS_THAN);
+        } finally {
+            current = saved;
+        }
+    }
+    
+    /**
+     * Parse old cast syntax: <type>(expression)
+     */
+    private boolean isOldCastExpression() {
+        int saved = current;
+        try {
+            if (!check(TokenType.LESS_THAN)) return false;
+            advance(); // consume '<'
+            if (!isTypeToken(peek().getType())) return false;
+            advance(); // consume type
+            if (!check(TokenType.GREATER_THAN)) return false;
+            advance(); // consume '>'
+            return check(TokenType.LEFT_PAREN);
+        } finally {
+            current = saved;
+        }
+    }
+    
+    private Expression parseOldCastExpression() throws CompilerError {
+        consume(TokenType.LESS_THAN, "Expected '<' at start of cast.");
+        Token typeToken = consumeType("Expected type name in cast.");
+        Type targetType = getTypeFromToken(typeToken);
+        consume(TokenType.GREATER_THAN, "Expected '>' after cast type.");
+        consume(TokenType.LEFT_PAREN, "Expected '(' after cast type.");
+        Expression expression = parseExpression();
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after cast expression.");
+        return new CastExpression(targetType, expression, typeToken.getLine(), typeToken.getColumn());
+    }
+    
+    /**
+     * Parse new cast syntax: type<expression> (TODO: fix precedence issues)
+     */
+    private Expression parseCastExpression() throws CompilerError {
+        // Parse: TYPE '<' expression '>'
+        Token typeToken = consumeType("Expected type name at start of cast.");
+        Type targetType = getTypeFromToken(typeToken);
+        
+        consume(TokenType.LESS_THAN, "Expected '<' after type in cast expression.");
+        Expression expression = parseExpression();
+        consume(TokenType.GREATER_THAN, "Expected '>' after cast expression.");
+        
+        return new CastExpression(targetType, expression, typeToken.getLine(), typeToken.getColumn());
     }
     
     // ========== STATEMENT PARSING ==========

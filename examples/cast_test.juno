@@ -1,0 +1,8 @@
+// Test explicit casting
+int main() {
+    int x = 5;
+    ulong y = 10;
+    
+    // This should work with explicit cast
+    return int(ulong(x) + y);
+}

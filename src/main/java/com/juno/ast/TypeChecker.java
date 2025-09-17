@@ -686,7 +686,8 @@ public class TypeChecker implements ASTVisitor<Type> {
     }
     
     /**
-     * Get the result type of arithmetic operations with type promotion.
+     * Get the result type of arithmetic operations with STRICT type matching.
+     * Juno requires explicit casting - no implicit conversions allowed.
      */
     private Type getArithmeticResultType(Type leftType, Type rightType) {
         if (!(leftType instanceof PrimitiveType) || !(rightType instanceof PrimitiveType)) {
@@ -700,20 +701,14 @@ public class TypeChecker implements ASTVisitor<Type> {
             return null;
         }
         
-        // Floating point promotion
-        if (left.isFloatingPoint() || right.isFloatingPoint()) {
-            if (left == PrimitiveType.DOUBLE || right == PrimitiveType.DOUBLE) {
-                return PrimitiveType.DOUBLE;
-            }
-            return PrimitiveType.FLOAT;
+        // STRICT TYPE MATCHING: Both operands must be exactly the same type
+        // No implicit conversions allowed - explicit casting required
+        if (!left.equals(right)) {
+            return null;  // Type error - requires explicit cast
         }
         
-        // Integer promotion - promote to larger type
-        if (left.getSize() >= right.getSize()) {
-            return left;
-        } else {
-            return right;
-        }
+        // Both types are the same, return that type
+        return left;
     }
     
     /**
@@ -755,19 +750,96 @@ public class TypeChecker implements ASTVisitor<Type> {
     
     /**
      * Check if a cast is valid.
+     * Implements comprehensive cast validation rules for Juno language.
      */
     private boolean isCastValid(Type fromType, Type toType) {
         if (fromType == null || toType == null) {
             return false;
         }
         
+        String fromTypeName = fromType.getName();
+        String toTypeName = toType.getName();
+        
         // Can't cast from/to void
-        if (fromType.getName().equals("void") || toType.getName().equals("void")) {
+        if ("void".equals(fromTypeName) || "void".equals(toTypeName)) {
             return false;
         }
         
-        // Any type can be cast to any other non-void type (with potential runtime checks)
-        return true;
+        // Same type casts are always valid (but unnecessary)
+        if (fromTypeName.equals(toTypeName)) {
+            return true;
+        }
+        
+        // Handle primitive type casts
+        if (fromType instanceof PrimitiveType && toType instanceof PrimitiveType) {
+            return isPrimitiveCastValid(fromTypeName, toTypeName);
+        }
+        
+        // Handle object type casts (for future use)
+        // For now, allow all object casts with runtime checking
+        if (!(fromType instanceof PrimitiveType) && !(toType instanceof PrimitiveType)) {
+            return true; // Object to object casts (implement proper inheritance checking later)
+        }
+        
+        // Primitive to object or object to primitive casts
+        // Generally not allowed without boxing/unboxing (implement later if needed)
+        return false;
+    }
+    
+    /**
+     * Check if a primitive type cast is valid.
+     */
+    private boolean isPrimitiveCastValid(String fromTypeName, String toTypeName) {
+        // All numeric type conversions are allowed
+        if (isNumericTypeName(fromTypeName) && isNumericTypeName(toTypeName)) {
+            return true;
+        }
+        
+        // Boolean to numeric conversions
+        if ("bool".equals(fromTypeName) && isNumericTypeName(toTypeName)) {
+            return true; // bool can be cast to any numeric type (0 or 1)
+        }
+        if (isNumericTypeName(fromTypeName) && "bool".equals(toTypeName)) {
+            return true; // numeric can be cast to bool (0 = false, non-zero = true)
+        }
+        
+        // Character to numeric conversions
+        if ("char".equals(fromTypeName) && isNumericTypeName(toTypeName)) {
+            return true; // char can be cast to numeric types (Unicode value)
+        }
+        if (isNumericTypeName(fromTypeName) && "char".equals(toTypeName)) {
+            return true; // numeric can be cast to char (truncated to char range)
+        }
+        
+        // Character to boolean conversions
+        if ("char".equals(fromTypeName) && "bool".equals(toTypeName)) {
+            return true; // char can be cast to bool (0 = false, non-zero = true)
+        }
+        if ("bool".equals(fromTypeName) && "char".equals(toTypeName)) {
+            return true; // bool can be cast to char (0 or 1)
+        }
+        
+        // String conversions are generally not allowed without explicit parsing
+        // (This maintains type safety - strings need explicit parsing methods)
+        if ("string".equals(fromTypeName) || "string".equals(toTypeName)) {
+            // String to string is handled above (same type)
+            // All other string conversions are invalid
+            return false;
+        }
+        
+        // All other combinations are invalid
+        return false;
+    }
+    
+    /**
+     * Check if a type name represents a numeric type.
+     */
+    private boolean isNumericTypeName(String typeName) {
+        return "int".equals(typeName) || "uint".equals(typeName) ||
+               "long".equals(typeName) || "ulong".equals(typeName) ||
+               "byte".equals(typeName) || "ubyte".equals(typeName) ||
+               "short".equals(typeName) || "ushort".equals(typeName) ||
+               "float".equals(typeName) || "double".equals(typeName);
     }
     
     /**

@@ -262,6 +262,14 @@ public class CodeGenerator implements ASTVisitor<Void> {
             // Generate initialization code
             if (varDecl.getInitializer() != null) {
                 varDecl.getInitializer().accept(this);  // Generate value on stack
+                
+                // Add type conversion if needed between initializer and variable type
+                com.juno.types.Type initializerType = varDecl.getInitializer().getType();
+                if (initializerType != null && !initializerType.equals(varType)) {
+                    jasminComment("Convert " + initializerType.getName() + " to " + varType.getName());
+                    generateTypeConversion(initializerType, varType);
+                }
+                
                 storeVariable(varType, varSlot);        // Store in local variable
             } else {
                 // Initialize with default value
@@ -526,33 +534,55 @@ public class CodeGenerator implements ASTVisitor<Void> {
     @Override
     public Void visitLiteralExpression(LiteralExpression expr) {
         Object value = expr.getValue();
+        com.juno.types.Type astType = expr.getType();
+        
+        // Check if AST type indicates this should be a long value
+        boolean shouldBeLong = (astType != null && isLongType(astType));
         
         if (value instanceof Long) {
             long longValue = (Long) value;
-            if (longValue >= -128 && longValue <= 127) {
-                methodGenerator.visitIntInsn(BIPUSH, (int) longValue);
-                jasminInstruction("bipush " + (int) longValue);
-            } else if (longValue >= -32768 && longValue <= 32767) {
-                methodGenerator.visitIntInsn(SIPUSH, (int) longValue);
-                jasminInstruction("sipush " + (int) longValue);
-            } else if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+            // Always generate proper long instructions for long literals
+            if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+                // Small long values: push as int and convert to long
                 methodGenerator.visitLdcInsn((int) longValue);
+                methodGenerator.visitInsn(I2L);
                 jasminInstruction("ldc " + (int) longValue);
+                jasminInstruction("i2l ; convert to long");
             } else {
+                // Large long values: use ldc2_w
                 methodGenerator.visitLdcInsn(longValue);
                 jasminInstruction("ldc2_w " + longValue + "L");
             }
         } else if (value instanceof Integer) {
             int intValue = (Integer) value;
-            if (intValue >= -128 && intValue <= 127) {
-                methodGenerator.visitIntInsn(BIPUSH, intValue);
-                jasminInstruction("bipush " + intValue);
-            } else if (intValue >= -32768 && intValue <= 32767) {
-                methodGenerator.visitIntInsn(SIPUSH, intValue);
-                jasminInstruction("sipush " + intValue);
+            
+            if (shouldBeLong) {
+                // Integer value but AST type is long - generate as int then convert
+                if (intValue >= -128 && intValue <= 127) {
+                    methodGenerator.visitIntInsn(BIPUSH, intValue);
+                    jasminInstruction("bipush " + intValue);
+                } else if (intValue >= -32768 && intValue <= 32767) {
+                    methodGenerator.visitIntInsn(SIPUSH, intValue);
+                    jasminInstruction("sipush " + intValue);
+                } else {
+                    methodGenerator.visitLdcInsn(intValue);
+                    jasminInstruction("ldc " + intValue);
+                }
+                // Convert int to long since AST type is long
+                methodGenerator.visitInsn(I2L);
+                jasminInstruction("i2l ; convert to long for AST type");
             } else {
-                methodGenerator.visitLdcInsn(intValue);
-                jasminInstruction("ldc " + intValue);
+                // Regular integer literal
+                if (intValue >= -128 && intValue <= 127) {
+                    methodGenerator.visitIntInsn(BIPUSH, intValue);
+                    jasminInstruction("bipush " + intValue);
+                } else if (intValue >= -32768 && intValue <= 32767) {
+                    methodGenerator.visitIntInsn(SIPUSH, intValue);
+                    jasminInstruction("sipush " + intValue);
+                } else {
+                    methodGenerator.visitLdcInsn(intValue);
+                    jasminInstruction("ldc " + intValue);
+                }
             }
         } else if (value instanceof Float) {
             methodGenerator.visitLdcInsn((Float) value);
@@ -660,11 +690,14 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     @Override
     public Void visitCastExpression(CastExpression expr) {
+        com.juno.types.Type sourceType = expr.getExpression().getType();
+        com.juno.types.Type targetType = expr.getTargetType();
+        
         // Generate the expression to be cast
         expr.getExpression().accept(this);
         
-        // TODO: Implement proper type casting
-        // For now, assume compatible types (type checker should ensure this)
+        // Emit type conversion instructions
+        generateTypeConversion(sourceType, targetType);
         
         return null;
     }
@@ -1015,13 +1048,205 @@ public class CodeGenerator implements ASTVisitor<Void> {
         return false;
     }
     
+    /**
+     * Generate JVM bytecode instructions to convert from one type to another.
+     * Assumes the source value is already on the stack.
+     */
     private void generateTypeConversion(com.juno.types.Type fromType, com.juno.types.Type toType) {
-        if (isIntegerType(fromType) && isLongType(toType)) {
-            // Convert int to long
-            methodGenerator.visitInsn(I2L);
-            jasminInstruction("i2l");
+        if (fromType == null || toType == null) {
+            return; // No conversion possible
         }
-        // Add more conversions as needed
+        
+        // If types are the same, no conversion needed
+        String fromTypeName = fromType.getName();
+        String toTypeName = toType.getName();
+        
+        if (fromTypeName.equals(toTypeName)) {
+            return; // No conversion needed
+        }
+        
+        // Handle primitive type conversions
+        if (fromType instanceof PrimitiveType && toType instanceof PrimitiveType) {
+            generatePrimitiveTypeConversion(fromTypeName, toTypeName);
+        } else {
+            // For non-primitive types, assume no conversion is needed for now
+            // TODO: Handle object type conversions, boxing/unboxing
+        }
+    }
+    
+    /**
+     * Generate conversion instructions for primitive types.
+     */
+    private void generatePrimitiveTypeConversion(String fromTypeName, String toTypeName) {
+        // Handle integer to integer conversions
+        if (isIntegerTypeName(fromTypeName) && isIntegerTypeName(toTypeName)) {
+            generateIntegerToIntegerConversion(fromTypeName, toTypeName);
+        }
+        // Handle integer to floating point conversions
+        else if (isIntegerTypeName(fromTypeName) && isFloatingPointTypeName(toTypeName)) {
+            generateIntegerToFloatConversion(fromTypeName, toTypeName);
+        }
+        // Handle floating point to integer conversions
+        else if (isFloatingPointTypeName(fromTypeName) && isIntegerTypeName(toTypeName)) {
+            generateFloatToIntegerConversion(fromTypeName, toTypeName);
+        }
+        // Handle floating point to floating point conversions
+        else if (isFloatingPointTypeName(fromTypeName) && isFloatingPointTypeName(toTypeName)) {
+            generateFloatToFloatConversion(fromTypeName, toTypeName);
+        }
+        // Handle character conversions
+        else if ("char".equals(fromTypeName) && isIntegerTypeName(toTypeName)) {
+            // char -> integer (char is already stored as int in JVM)
+            if ("long".equals(toTypeName) || "ulong".equals(toTypeName)) {
+                methodGenerator.visitInsn(I2L);
+                jasminInstruction("i2l ; char to long");
+            }
+            // For other integer types, no conversion needed (char is already int on JVM)
+        }
+        else if (isIntegerTypeName(fromTypeName) && "char".equals(toTypeName)) {
+            // integer -> char (truncate to char range)
+            if ("long".equals(fromTypeName) || "ulong".equals(fromTypeName)) {
+                methodGenerator.visitInsn(L2I);
+                jasminInstruction("l2i ; long to char via int");
+            }
+            // For other integer types, no conversion needed (already int on JVM)
+        }
+        // Handle bool conversions
+        else if ("bool".equals(fromTypeName) && isIntegerTypeName(toTypeName)) {
+            if ("long".equals(toTypeName) || "ulong".equals(toTypeName)) {
+                methodGenerator.visitInsn(I2L);
+                jasminInstruction("i2l ; bool to long");
+            }
+            // For other integer types, no conversion needed (bool is already int on JVM)
+        }
+        else if (isIntegerTypeName(fromTypeName) && "bool".equals(toTypeName)) {
+            if ("long".equals(fromTypeName) || "ulong".equals(fromTypeName)) {
+                methodGenerator.visitInsn(L2I);
+                jasminInstruction("l2i ; long to bool via int");
+            }
+            // TODO: Consider adding bounds checking for bool conversion (ensure 0 or 1)
+        }
+    }
+    
+    private void generateIntegerToIntegerConversion(String fromTypeName, String toTypeName) {
+        // From smaller integer types to long
+        if (("int".equals(fromTypeName) || "uint".equals(fromTypeName) ||
+             "byte".equals(fromTypeName) || "ubyte".equals(fromTypeName) ||
+             "short".equals(fromTypeName) || "ushort".equals(fromTypeName)) &&
+            ("long".equals(toTypeName) || "ulong".equals(toTypeName))) {
+            methodGenerator.visitInsn(I2L);
+            jasminInstruction("i2l ; " + fromTypeName + " to " + toTypeName);
+        }
+        // From long to smaller integer types
+        else if (("long".equals(fromTypeName) || "ulong".equals(fromTypeName)) &&
+                 ("int".equals(toTypeName) || "uint".equals(toTypeName) ||
+                  "byte".equals(toTypeName) || "ubyte".equals(toTypeName) ||
+                  "short".equals(toTypeName) || "ushort".equals(toTypeName))) {
+            methodGenerator.visitInsn(L2I);
+            jasminInstruction("l2i ; " + fromTypeName + " to " + toTypeName);
+            
+            // Additional narrowing if needed
+            if ("byte".equals(toTypeName) || "ubyte".equals(toTypeName)) {
+                methodGenerator.visitInsn(I2B);
+                jasminInstruction("i2b ; narrow to byte");
+            } else if ("short".equals(toTypeName) || "ushort".equals(toTypeName)) {
+                methodGenerator.visitInsn(I2S);
+                jasminInstruction("i2s ; narrow to short");
+            }
+        }
+        // From int to smaller integer types (byte, short)
+        else if (("int".equals(fromTypeName) || "uint".equals(fromTypeName)) &&
+                 ("byte".equals(toTypeName) || "ubyte".equals(toTypeName))) {
+            methodGenerator.visitInsn(I2B);
+            jasminInstruction("i2b ; " + fromTypeName + " to " + toTypeName);
+        }
+        else if (("int".equals(fromTypeName) || "uint".equals(fromTypeName)) &&
+                 ("short".equals(toTypeName) || "ushort".equals(toTypeName))) {
+            methodGenerator.visitInsn(I2S);
+            jasminInstruction("i2s ; " + fromTypeName + " to " + toTypeName);
+        }
+        // No conversion needed for same-sized integer types (int/uint, long/ulong, etc.)
+    }
+    
+    private void generateIntegerToFloatConversion(String fromTypeName, String toTypeName) {
+        if ("long".equals(fromTypeName) || "ulong".equals(fromTypeName)) {
+            if ("float".equals(toTypeName)) {
+                methodGenerator.visitInsn(L2F);
+                jasminInstruction("l2f ; " + fromTypeName + " to float");
+            } else if ("double".equals(toTypeName)) {
+                methodGenerator.visitInsn(L2D);
+                jasminInstruction("l2d ; " + fromTypeName + " to double");
+            }
+        } else {
+            // From int-sized types to float
+            if ("float".equals(toTypeName)) {
+                methodGenerator.visitInsn(I2F);
+                jasminInstruction("i2f ; " + fromTypeName + " to float");
+            } else if ("double".equals(toTypeName)) {
+                methodGenerator.visitInsn(I2D);
+                jasminInstruction("i2d ; " + fromTypeName + " to double");
+            }
+        }
+    }
+    
+    private void generateFloatToIntegerConversion(String fromTypeName, String toTypeName) {
+        // First convert to int or long
+        if ("float".equals(fromTypeName)) {
+            if ("long".equals(toTypeName) || "ulong".equals(toTypeName)) {
+                methodGenerator.visitInsn(F2L);
+                jasminInstruction("f2l ; float to " + toTypeName);
+            } else {
+                methodGenerator.visitInsn(F2I);
+                jasminInstruction("f2i ; float to " + toTypeName);
+                
+                // Additional narrowing if needed
+                if ("byte".equals(toTypeName) || "ubyte".equals(toTypeName)) {
+                    methodGenerator.visitInsn(I2B);
+                    jasminInstruction("i2b ; narrow to byte");
+                } else if ("short".equals(toTypeName) || "ushort".equals(toTypeName)) {
+                    methodGenerator.visitInsn(I2S);
+                    jasminInstruction("i2s ; narrow to short");
+                }
+            }
+        } else if ("double".equals(fromTypeName)) {
+            if ("long".equals(toTypeName) || "ulong".equals(toTypeName)) {
+                methodGenerator.visitInsn(D2L);
+                jasminInstruction("d2l ; double to " + toTypeName);
+            } else {
+                methodGenerator.visitInsn(D2I);
+                jasminInstruction("d2i ; double to " + toTypeName);
+                
+                // Additional narrowing if needed
+                if ("byte".equals(toTypeName) || "ubyte".equals(toTypeName)) {
+                    methodGenerator.visitInsn(I2B);
+                    jasminInstruction("i2b ; narrow to byte");
+                } else if ("short".equals(toTypeName) || "ushort".equals(toTypeName)) {
+                    methodGenerator.visitInsn(I2S);
+                    jasminInstruction("i2s ; narrow to short");
+                }
+            }
+        }
+    }
+    
+    private void generateFloatToFloatConversion(String fromTypeName, String toTypeName) {
+        if ("float".equals(fromTypeName) && "double".equals(toTypeName)) {
+            methodGenerator.visitInsn(F2D);
+            jasminInstruction("f2d ; float to double");
+        } else if ("double".equals(fromTypeName) && "float".equals(toTypeName)) {
+            methodGenerator.visitInsn(D2F);
+            jasminInstruction("d2f ; double to float");
+        }
+    }
+    
+    private boolean isIntegerTypeName(String typeName) {
+        return "int".equals(typeName) || "uint".equals(typeName) ||
+               "long".equals(typeName) || "ulong".equals(typeName) ||
+               "byte".equals(typeName) || "ubyte".equals(typeName) ||
+               "short".equals(typeName) || "ushort".equals(typeName);
+    }
+    
+    private boolean isFloatingPointTypeName(String typeName) {
+        return "float".equals(typeName) || "double".equals(typeName);
     }
     
     private boolean isIntegerType(com.juno.types.Type type) {

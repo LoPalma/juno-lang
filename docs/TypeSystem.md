@@ -2,13 +2,17 @@
 
 This document describes the type system of the **Juno** programming language.
 
-Juno is a **statically typed** and **very strongly typed** language. All types are resolved at compile time and implicit conversions are not permitted. Operations with mismatched operand types produce compile-time errors. For example:
+Juno is a **statically typed** and **very strongly typed** language. 
+All types are resolved at compile time and implicit conversions are not permitted,
+not even the most basic ones, such as promoting an `int` to a `long`.
+Operations with mismatched operand types produce compile-time errors. For example:
 
 ```juno
-3.0 / 2;  // error: operand type mismatch
+3.0 / 2;  // type mismatch error
 ```
 
-Even types that appear dynamic (for example `any`) are statically checked — you cannot perform an operation with incompatible operand types even when one operand is `any`:
+Even types that appear dynamic (for example `any`) are statically checked — 
+you cannot perform an operation with incompatible operand types even when one operand is `any`:
 
 ```juno
 any a = 42;
@@ -75,7 +79,8 @@ The following table summarizes Juno’s built-in primitive types:
 
     * A statically-typed generic container capable of holding a value of any concrete type.
     * Representation is implementation-defined (commonly a boxed value with a tag); semantics are statically enforced.
-    * Operations on `any` are only allowed when the operation is valid for all possible types represented by that `any` value in context; otherwise the compiler reports an error.
+    * Operations on `any` are only allowed when the operation is valid for all possible types represented by that `any` value in context; 
+otherwise the compiler reports an error.
 
 * **`auto`**
 

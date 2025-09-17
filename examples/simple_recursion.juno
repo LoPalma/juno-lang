@@ -1,0 +1,13 @@
+// Simplified test: same types everywhere
+ulong fibonacci(ulong n) {
+    if n < 2 {
+        return n;
+    }
+    else {
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+}
+
+ulong main() {
+    return fibonacci(5);
+}
