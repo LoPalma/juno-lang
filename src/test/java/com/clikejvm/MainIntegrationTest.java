@@ -3,8 +3,9 @@ package com.clikejvm;
 import com.clikejvm.lexer.Lexer;
 import com.clikejvm.lexer.Token;
 import com.clikejvm.lexer.TokenType;
-import com.clikejvm.parser.Parser;
+import com.clikejvm.ast.Parser;
 import com.clikejvm.ast.Program;
+import com.clikejvm.error.ErrorCollector;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +27,8 @@ public class MainIntegrationTest {
     public void testHelloWorldTokenization() throws IOException {
         String helloSource = Files.readString(Path.of("examples/hello.cl"));
         
-        Lexer lexer = new Lexer(helloSource);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(helloSource, "examples/hello.cl", errorCollector);
         List<Token> tokens = lexer.tokenize();
 
         // Should find expected tokens including keywords and identifiers
@@ -51,7 +53,8 @@ public class MainIntegrationTest {
     public void testFactorialTokenization() throws IOException {
         String factorialSource = Files.readString(Path.of("examples/factorial.cl"));
         
-        Lexer lexer = new Lexer(factorialSource);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(factorialSource, "examples/factorial.cl", errorCollector);
         List<Token> tokens = lexer.tokenize();
 
         assertThat(tokens).isNotEmpty();
@@ -79,12 +82,14 @@ public class MainIntegrationTest {
         String helloSource = Files.readString(Path.of("examples/hello.cl"));
 
         // Phase 1: Lexical Analysis
-        Lexer lexer = new Lexer(helloSource);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(helloSource, "examples/hello.cl", errorCollector);
         List<Token> tokens = lexer.tokenize();
         assertThat(tokens).isNotEmpty();
 
         // Phase 2: Parsing (returns empty program currently)
-        Parser parser = new Parser(tokens);
+        String[] sourceLines = helloSource.split("\n");
+        Parser parser = new Parser(tokens, "examples/hello.cl", sourceLines, errorCollector);
         Program program = parser.parseProgram();
         assertThat(program).isNotNull();
         // Note: Parser currently returns empty program, so we can't test much more
@@ -102,7 +107,8 @@ public class MainIntegrationTest {
     public void testBasicVariableDeclaration() {
         String source = "int x = 42;";
         
-        Lexer lexer = new Lexer(source);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(source, "test.cl", errorCollector);
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token for easier testing
@@ -123,7 +129,8 @@ public class MainIntegrationTest {
     public void testFunctionDeclaration() {
         String source = "int add(int a, int b) { return a + b; }";
         
-        Lexer lexer = new Lexer(source);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(source, "test.cl", errorCollector);
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -146,7 +153,8 @@ public class MainIntegrationTest {
     public void testArithmeticExpressions() {
         String source = "result = (a + b) * c / d - e % f;";
         
-        Lexer lexer = new Lexer(source);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(source, "test.cl", errorCollector);
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -173,7 +181,8 @@ public class MainIntegrationTest {
     public void testBooleanExpressions() {
         String source = "if (x == y && (a > b || c < d) && !flag) { }";
         
-        Lexer lexer = new Lexer(source);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(source, "test.cl", errorCollector);
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -207,7 +216,8 @@ public class MainIntegrationTest {
             bool isTrue = true;
             """;
         
-        Lexer lexer = new Lexer(source);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(source, "test.cl", errorCollector);
         List<Token> tokens = lexer.tokenize();
 
         // Should parse correctly despite comments
@@ -243,7 +253,8 @@ public class MainIntegrationTest {
 
         // Test that the file can be tokenized
         String source = Files.readString(tempFile);
-        Lexer lexer = new Lexer(source);
+        ErrorCollector errorCollector = new ErrorCollector();
+        Lexer lexer = new Lexer(source, tempFile.toString(), errorCollector);
         List<Token> tokens = lexer.tokenize();
 
         assertThat(tokens).isNotEmpty();

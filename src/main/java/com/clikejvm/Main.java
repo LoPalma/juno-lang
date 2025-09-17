@@ -4,8 +4,9 @@ import com.clikejvm.error.CompilerError;
 import com.clikejvm.error.ErrorCollector;
 import com.clikejvm.error.ErrorReporter;
 import com.clikejvm.lexer.Lexer;
-import com.clikejvm.parser.Parser;
+import com.clikejvm.ast.Parser;
 import com.clikejvm.ast.Program;
+import com.clikejvm.ast.ASTDebugPrinter;
 import com.clikejvm.types.TypeChecker;
 import com.clikejvm.codegen.CodeGenerator;
 
@@ -19,15 +20,17 @@ import java.nio.file.Paths;
  */
 public class Main {
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.err.println("Usage: java -jar clike-jvm-lang.jar <source-file>");
+        if (args.length < 1 || args.length > 2) {
+            System.err.println("Usage: java -jar clike-jvm-lang.jar <source-file> [--debug-ast]");
             System.exit(1);
         }
 
         String sourceFile = args[0];
+        boolean debugAST = args.length > 1 && "--debug-ast".equals(args[1]);
+        
         try {
             ErrorCollector errorCollector = new ErrorCollector();
-            compile(sourceFile, errorCollector);
+            compile(sourceFile, errorCollector, debugAST);
             
             // Print all errors and warnings
             errorCollector.printAll();
@@ -46,7 +49,7 @@ public class Main {
         }
     }
 
-    private static void compile(String sourceFile, ErrorCollector errorCollector) throws IOException {
+    private static void compile(String sourceFile, ErrorCollector errorCollector, boolean debugAST) throws IOException {
         Path sourcePath = Paths.get(sourceFile);
         if (!Files.exists(sourcePath)) {
             throw new IllegalArgumentException("Source file not found: " + sourceFile);
@@ -70,12 +73,16 @@ public class Main {
             return;
         }
         
-        Parser parser = new Parser(tokens, sourceFile, sourceLines);
-        try {
-            Program program = parser.parseProgram();
-            System.out.println("Parsed program with " + program.getStatements().size() + " statements");
-        } catch (CompilerError e) {
-            errorCollector.addError(e);
+        Parser parser = new Parser(tokens, sourceFile, sourceLines, errorCollector);
+        Program program = parser.parseProgram();
+        System.out.println("Parsed program with " + program.getStatements().size() + " statements");
+        
+        // Print AST if debug flag is enabled
+        if (debugAST) {
+            System.out.println("\n=== AST DEBUG OUTPUT ===");
+            ASTDebugPrinter debugPrinter = new ASTDebugPrinter();
+            System.out.println(program.accept(debugPrinter));
+            System.out.println("========================\n");
         }
 
         // Type Checking

@@ -214,6 +214,12 @@ This project is in early development. Key areas for contribution:
 5. **Testing**: Expand test coverage
 6. **Documentation**: Improve language specification and examples
 
+## Development Credit
+
+This programming language and compiler infrastructure is designed and architected by the project owner. 
+While AI assistance (Claude) was utilized to accelerate implementation of certain components, all design decisions, language specifications, architectural choices, and creative direction originate from the project owner. 
+The language concept, syntax design, type system, module system, and overall vision are entirely the work of the human developer.
+
 ## License
 
 This project is open source. See LICENSE file for details.

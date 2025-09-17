@@ -17,7 +17,7 @@ public class LexerTest {
     @DisplayName("Should tokenize basic keywords correctly")
     public void testKeywords() {
         String source = "int float char string bool void true false if else while for return";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token for easier testing
@@ -43,7 +43,7 @@ public class LexerTest {
     @DisplayName("Should tokenize operators correctly")
     public void testOperators() {
         String source = "+ - * / % = == != < <= > >= && || ! & | ^ ~ << >>";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -77,7 +77,7 @@ public class LexerTest {
     @DisplayName("Should tokenize delimiters correctly")
     public void testDelimiters() {
         String source = "() {} [] ; , . ->";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -100,7 +100,7 @@ public class LexerTest {
     @DisplayName("Should tokenize identifiers correctly")
     public void testIdentifiers() {
         String source = "variable myFunction _private MAX_SIZE camelCase";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -122,7 +122,7 @@ public class LexerTest {
     @DisplayName("Should tokenize string literals correctly")
     public void testStringLiterals() {
         String source = "\"Hello, World!\" \"\" \"Line 1\\nLine 2\"";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -142,7 +142,7 @@ public class LexerTest {
     @DisplayName("Should tokenize character literals correctly")
     public void testCharacterLiterals() {
         String source = "'a' 'Z' '\\n' '\\t' '\\\\'";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -164,7 +164,7 @@ public class LexerTest {
     @ValueSource(strings = {"123", "0", "999999"})
     @DisplayName("Should tokenize integer literals correctly")
     public void testIntegerLiterals(String intStr) {
-        Lexer lexer = new Lexer(intStr);
+        Lexer lexer = new Lexer(intStr, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -179,7 +179,7 @@ public class LexerTest {
     @ValueSource(strings = {"3.14", "0.0", "123.456"})
     @DisplayName("Should tokenize float literals correctly")
     public void testFloatLiterals(String floatStr) {
-        Lexer lexer = new Lexer(floatStr);
+        Lexer lexer = new Lexer(floatStr, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -194,7 +194,7 @@ public class LexerTest {
     @DisplayName("Should handle single-line comments correctly")
     public void testSingleLineComments() {
         String source = "int x; // This is a comment\nint y;";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -213,7 +213,7 @@ public class LexerTest {
     @DisplayName("Should handle block comments correctly")
     public void testBlockComments() {
         String source = "int x; /* This is a\n   block comment */ int y;";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -232,7 +232,7 @@ public class LexerTest {
     @DisplayName("Should maintain correct line and column information")
     public void testLineAndColumnTracking() {
         String source = "int x;\nfloat y;";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Check first line tokens
@@ -259,7 +259,7 @@ public class LexerTest {
             }
             """;
         
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Should find all expected tokens including keywords, identifiers, operators, and delimiters
@@ -276,7 +276,7 @@ public class LexerTest {
     @DisplayName("Should handle whitespace correctly")
     public void testWhitespaceHandling() {
         String source = "   int    x   ;   ";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         // Remove EOF token
@@ -292,7 +292,7 @@ public class LexerTest {
     @DisplayName("Should always end with EOF token")
     public void testEOFToken() {
         String source = "int x;";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         assertThat(tokens).isNotEmpty();
@@ -304,7 +304,7 @@ public class LexerTest {
     @DisplayName("Should handle empty source")
     public void testEmptySource() {
         String source = "";
-        Lexer lexer = new Lexer(source);
+        Lexer lexer = new Lexer(source, "test.cl", new com.clikejvm.error.ErrorCollector());
         List<Token> tokens = lexer.tokenize();
 
         assertThat(tokens).hasSize(1);
