@@ -1,0 +1,21 @@
+#!/bin/bash
+# Clean up stale Juno compilation artifacts
+
+echo "Cleaning up Juno compilation artifacts..."
+
+# Remove stale .cl.class files (these shouldn't exist with new compiler)
+find . -maxdepth 1 -name "*.cl.class" -delete 2>/dev/null && echo "Removed stale .cl.class files"
+
+# Remove stale .juno.class files (these shouldn't exist)
+find . -maxdepth 1 -name "*.juno.class" -delete 2>/dev/null && echo "Removed stale .juno.class files"
+
+# Remove orphaned .j files (optional - for when you don't want jasmin files)
+if [[ "$1" == "--jasmin" ]]; then
+    find . -maxdepth 1 -name "*.j" -delete 2>/dev/null && echo "Removed Jasmin files"
+fi
+
+echo "Cleanup complete!"
+echo ""
+echo "Usage after cleanup:"
+echo "  ./junoc myprogram.juno    # Compile"
+echo "  java myprogram            # Run"

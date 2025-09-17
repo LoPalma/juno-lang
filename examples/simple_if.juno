@@ -1,0 +1,14 @@
+// Simple if test
+
+ulong test(int n) {
+	if n < 5 {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+ulong main() {
+	return test(3);
+}

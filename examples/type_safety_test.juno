@@ -1,0 +1,14 @@
+// Test to verify type safety is preserved
+// This should either work with explicit casting or fail with type error
+
+ulong test_implicit_cast() {
+    int x = 42;
+    ulong y = 100;
+    
+    // This should either require explicit cast or fail
+    return x + y;  // DANGER: implicit int->long cast?
+}
+
+ulong main() {
+    return test_implicit_cast();
+}

@@ -1,0 +1,7 @@
+// Simple test: should int + ulong be allowed?
+
+int main() {
+    int x = 5;
+    ulong y = 10;
+    return x + y;  // This should fail type checking!
+}

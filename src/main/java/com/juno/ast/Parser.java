@@ -196,8 +196,16 @@ public class Parser {
     }
     
     private Expression parseComparison() throws CompilerError {
-        // For now, just pass through to concatenation
-        return parseConcatenation();
+        Expression expr = parseConcatenation();
+        
+        while (match(TokenType.GREATER_THAN, TokenType.GREATER_EQUAL, 
+                     TokenType.LESS_THAN, TokenType.LESS_EQUAL)) {
+            Token operator = previous();
+            Expression right = parseConcatenation();
+            expr = new BinaryExpression(expr, operator.getLexeme(), right, operator.getLine(), operator.getColumn());
+        }
+        
+        return expr;
     }
     
     private Expression parseConcatenation() throws CompilerError {
