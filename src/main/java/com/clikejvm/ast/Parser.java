@@ -56,17 +56,38 @@ public class Parser {
      * Parse a top-level statement.
      */
     private Statement parseStatement() throws CompilerError {
+        // If we're at EOF, return null to signal end of parsing
+        if (isAtEnd()) {
+            return null;
+        }
+        
         // Handle import statements
         if (match(TokenType.IMPORT)) {
             return parseImportStatement();
         }
         
-        // Handle variable declarations (type identifier ...)
-        if (isTypeToken(peek().getType())) {
-            return parseVariableDeclaration();
+        // Handle public declarations
+        if (match(TokenType.PUBLIC)) {
+            return parsePublicDeclaration();
         }
         
-        throw error(ErrorCode.BAD_SYNTAX, peek(), "Expected import statement or variable declaration.");
+        // Handle type declarations (functions or variables)
+        if (isTypeToken(peek().getType())) {
+            if (checkFunctionDecl()) {
+                return parseFunctionDeclaration(false);
+            } else {
+                return parseVariableDeclaration(false);
+            }
+        }
+        
+        // Handle control flow statements
+        if (match(TokenType.IF)) return parseIfStatement();
+        if (match(TokenType.WHILE)) return parseWhileStatement();
+        if (match(TokenType.RETURN)) return parseReturnStatement();
+        if (match(TokenType.LEFT_BRACE)) return parseBlockStatement();
+        
+        // Handle expression statements
+        return parseExpressionStatement();
     }
     
     private ImportStatement parseImportStatement() throws CompilerError {
@@ -93,7 +114,7 @@ public class Parser {
         return new ImportStatement(moduleName, importedItems, startToken.getLine(), startToken.getColumn());
     }
     
-    private VariableDeclaration parseVariableDeclaration() throws CompilerError {
+    private VariableDeclaration parseVariableDeclaration(boolean isPublic) throws CompilerError {
         Token typeToken = consumeType("Expected type.");
         Type type = getTypeFromToken(typeToken);
         
@@ -106,7 +127,7 @@ public class Parser {
         }
         
         consume(TokenType.SEMICOLON, "Expected ';' after variable declaration.");
-        return new VariableDeclaration(type, name, initializer, false, typeToken.getLine(), typeToken.getColumn());
+        return new VariableDeclaration(type, name, initializer, isPublic, typeToken.getLine(), typeToken.getColumn());
     }
     
     // ========== EXPRESSION PARSING ==========
@@ -158,7 +179,34 @@ public class Parser {
             return new UnaryExpression(operator.getLexeme(), right, operator.getLine(), operator.getColumn());
         }
         
-        return parsePrimary();
+        return parseCall();
+    }
+    
+    private Expression parseCall() throws CompilerError {
+        Expression expr = parsePrimary();
+        
+        while (true) {
+            if (match(TokenType.LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+        
+        return expr;
+    }
+    
+    private Expression finishCall(Expression callee) throws CompilerError {
+        List<Expression> arguments = new ArrayList<>();
+        
+        if (!check(TokenType.RIGHT_PAREN)) {
+            do {
+                arguments.add(parseExpression());
+            } while (match(TokenType.COMMA));
+        }
+        
+        Token paren = consume(TokenType.RIGHT_PAREN, "Expected ')' after arguments.");
+        return new CallExpression(callee, arguments, paren.getLine(), paren.getColumn());
     }
     
     private Expression parsePrimary() throws CompilerError {
@@ -201,9 +249,17 @@ public class Parser {
             return new LiteralExpression(value, token.getLine(), token.getColumn());
         }
         
-        // Identifiers
+        // Identifiers and qualified identifiers
         if (match(TokenType.IDENTIFIER)) {
             Token name = previous();
+            
+            // Check for qualified identifier (module.identifier)
+            if (match(TokenType.DOT)) {
+                Token memberToken = consume(TokenType.IDENTIFIER, "Expected identifier after '.'.");
+                return new QualifiedIdentifier(name.getLexeme(), memberToken.getLexeme(), 
+                                             name.getLine(), name.getColumn());
+            }
+            
             return new IdentifierExpression(name.getLexeme(), name.getLine(), name.getColumn());
         }
         
@@ -215,6 +271,174 @@ public class Parser {
         }
         
         throw error(ErrorCode.BAD_SYNTAX, peek(), "Expected expression.");
+    }
+    
+    // ========== STATEMENT PARSING ==========
+    
+    private Statement parsePublicDeclaration() throws CompilerError {
+        if (isTypeToken(peek().getType())) {
+            if (checkFunctionDecl()) {
+                return parseFunctionDeclaration(true);
+            } else {
+                return parseVariableDeclaration(true);
+            }
+        }
+        
+        throw error(ErrorCode.BAD_SYNTAX, peek(), "Expected function or variable declaration after 'public'.");
+    }
+    
+    private FunctionDeclaration parseFunctionDeclaration(boolean isPublic) throws CompilerError {
+        Token typeToken = consumeType("Expected return type.");
+        Type returnType = getTypeFromToken(typeToken);
+        
+        Token nameToken = consume(TokenType.IDENTIFIER, "Expected function name.");
+        String name = nameToken.getLexeme();
+        
+        consume(TokenType.LEFT_PAREN, "Expected '(' after function name.");
+        
+        List<FunctionDeclaration.Parameter> parameters = new ArrayList<>();
+        if (!check(TokenType.RIGHT_PAREN)) {
+            do {
+                Token paramTypeToken = consumeType("Expected parameter type.");
+                Type paramType = getTypeFromToken(paramTypeToken);
+                Token paramNameToken = consume(TokenType.IDENTIFIER, "Expected parameter name.");
+                String paramName = paramNameToken.getLexeme();
+                parameters.add(new FunctionDeclaration.Parameter(paramType, paramName));
+            } while (match(TokenType.COMMA));
+        }
+        
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after parameters.");
+        consume(TokenType.LEFT_BRACE, "Expected '{' before function body.");
+        BlockStatement body = parseBlockStatement();
+        
+        return new FunctionDeclaration(returnType, name, parameters, body, isPublic, 
+                                     typeToken.getLine(), typeToken.getColumn());
+    }
+    
+    private IfStatement parseIfStatement() throws CompilerError {
+        Token ifToken = previous();
+        consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'.");
+        Expression condition = parseExpression();
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after if condition.");
+        
+        Statement thenStmt = parseStatement();
+        Statement elseStmt = null;
+        
+        if (match(TokenType.ELSE)) {
+            elseStmt = parseStatement();
+        }
+        
+        return new IfStatement(condition, thenStmt, elseStmt, ifToken.getLine(), ifToken.getColumn());
+    }
+    
+    private WhileStatement parseWhileStatement() throws CompilerError {
+        Token whileToken = previous();
+        consume(TokenType.LEFT_PAREN, "Expected '(' after 'while'.");
+        Expression condition = parseExpression();
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after while condition.");
+        
+        Statement body = parseStatement();
+        return new WhileStatement(condition, body, whileToken.getLine(), whileToken.getColumn());
+    }
+    
+    private ReturnStatement parseReturnStatement() throws CompilerError {
+        Token returnToken = previous();
+        Expression value = null;
+        
+        if (!check(TokenType.SEMICOLON)) {
+            value = parseExpression();
+        }
+        
+        consume(TokenType.SEMICOLON, "Expected ';' after return value.");
+        return new ReturnStatement(value, returnToken.getLine(), returnToken.getColumn());
+    }
+    
+    private BlockStatement parseBlockStatement() throws CompilerError {
+        Token leftBrace = previous();
+        List<Statement> statements = new ArrayList<>();
+        
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            try {
+                Statement stmt = parseStatement();
+                if (stmt != null) {
+                    statements.add(stmt);
+                }
+            } catch (CompilerError e) {
+                errorCollector.addError(e);
+                synchronize();
+            }
+        }
+        
+        consume(TokenType.RIGHT_BRACE, "Expected '}' after block.");
+        return new BlockStatement(statements, leftBrace.getLine(), leftBrace.getColumn());
+    }
+    
+    private ExpressionStatement parseExpressionStatement() throws CompilerError {
+        Expression expr = parseExpression();
+        consume(TokenType.SEMICOLON, "Expected ';' after expression.");
+        return new ExpressionStatement(expr, expr.getLine(), expr.getColumn());
+    }
+    
+    // ========== HELPER METHODS ==========
+    
+    
+    private boolean isTypeToken(TokenType type) {
+        return type == TokenType.VOID || type == TokenType.INT || type == TokenType.FLOAT || 
+               type == TokenType.DOUBLE || type == TokenType.CHAR || type == TokenType.STRING ||
+               type == TokenType.BOOL || type == TokenType.BYTE || type == TokenType.SHORT ||
+               type == TokenType.LONG || type == TokenType.UBYTE || type == TokenType.USHORT ||
+               type == TokenType.UINT || type == TokenType.ULONG;
+    }
+    
+    private Token consumeType(String message) throws CompilerError {
+        if (isTypeToken(peek().getType())) {
+            return advance();
+        }
+        throw error(ErrorCode.BAD_SYNTAX, peek(), message);
+    }
+    
+    private Type getTypeFromToken(Token token) {
+        switch (token.getType()) {
+            case VOID: return PrimitiveType.VOID;
+            case INT: return PrimitiveType.INT;
+            case FLOAT: return PrimitiveType.FLOAT;
+            case DOUBLE: return PrimitiveType.DOUBLE;
+            case CHAR: return PrimitiveType.CHAR;
+            case STRING: return PrimitiveType.STRING;
+            case BOOL: return PrimitiveType.BOOL;
+            case BYTE: return PrimitiveType.BYTE;
+            case SHORT: return PrimitiveType.SHORT;
+            case LONG: return PrimitiveType.LONG;
+            case UBYTE: return PrimitiveType.UBYTE;
+            case USHORT: return PrimitiveType.USHORT;
+            case UINT: return PrimitiveType.UINT;
+            case ULONG: return PrimitiveType.ULONG;
+            default:
+                throw new RuntimeException("Invalid type token: " + token.getType());
+        }
+    }
+    
+    private void synchronize() {
+        advance();
+        
+        while (!isAtEnd()) {
+            if (previous().getType() == TokenType.SEMICOLON) return;
+            
+            switch (peek().getType()) {
+                case IF:
+                case WHILE:
+                case RETURN:
+                case PUBLIC:
+                case IMPORT:
+                    return;
+                default:
+                    if (isTypeToken(peek().getType())) {
+                        return;
+                    }
+            }
+            
+            advance();
+        }
     }
     
     // ========== UTILITY METHODS ==========
@@ -234,12 +458,6 @@ public class Parser {
         throw error(ErrorCode.BAD_SYNTAX, peek(), message);
     }
     
-    private Token consumeType(String message) throws CompilerError {
-        if (isTypeToken(peek().getType())) {
-            return advance();
-        }
-        throw error(ErrorCode.BAD_SYNTAX, peek(), message);
-    }
     
     private Token consumeModuleName(String message) throws CompilerError {
         // Allow identifiers and keywords as module names
@@ -271,13 +489,6 @@ public class Parser {
         return tokens.get(current - 1);
     }
     
-    private boolean isTypeToken(TokenType type) {
-        return type == TokenType.INT || type == TokenType.FLOAT || type == TokenType.CHAR || 
-               type == TokenType.STRING || type == TokenType.BOOL || type == TokenType.VOID ||
-               type == TokenType.BYTE || type == TokenType.UBYTE || type == TokenType.SHORT ||
-               type == TokenType.USHORT || type == TokenType.UINT || type == TokenType.ULONG ||
-               type == TokenType.LONG || type == TokenType.DOUBLE;
-    }
     
     private boolean isKeywordToken(TokenType type) {
         return isTypeToken(type) || 
@@ -310,13 +521,6 @@ public class Parser {
                tokens.get(current + 1).getType() == TokenType.BITWISE_XOR;
     }
     
-    private Type getTypeFromToken(Token token) throws CompilerError {
-        PrimitiveType type = PrimitiveType.fromName(token.getLexeme());
-        if (type == null) {
-            throw error(ErrorCode.BAD_SYNTAX, token, "Unknown type: " + token.getLexeme());
-        }
-        return type;
-    }
     
     private Object parseNumberLiteral(String lexeme) {
         try {
@@ -342,30 +546,5 @@ public class Parser {
         }
     }
     
-    private void synchronize() {
-        advance();
-        
-        while (!isAtEnd()) {
-            if (previous().getType() == TokenType.SEMICOLON) return;
-            
-            switch (peek().getType()) {
-                case IF:
-                case FOR:
-                case WHILE:
-                case RETURN:
-                case INT:
-                case FLOAT:
-                case CHAR:
-                case STRING:
-                case BOOL:
-                case VOID:
-                case IMPORT:
-                case PUBLIC:
-                    return;
-            }
-            
-            advance();
-        }
-    }
     
 }

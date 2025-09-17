@@ -28,14 +28,18 @@ mvn clean
 
 ### Running the Compiler
 ```bash
-# Compile a C-like source file using Maven exec plugin
+# Clean execution without Maven noise (Recommended)
+./run.sh examples/hello.cl
+./run.sh examples/hello.cl --debug-ast
+
+# Alternative Maven execution with reduced output
+./mvn-run.sh examples/hello.cl
+
+# Traditional Maven execution (verbose)
 mvn exec:java -Dexec.args="examples/hello.cl"
 
-# Compile using the packaged JAR (after mvn package)
-java -jar target/clike-jvm-lang-1.0.0-SNAPSHOT.jar examples/factorial.cl
-
-# Test with example programs
-mvn exec:java -Dexec.args="examples/factorial.cl"
+# Direct JAR execution (after mvn package)
+java -jar target/clike-jvm-lang-1.0.0-SNAPSHOT.jar examples/hello.cl
 ```
 
 ### Development Workflow
@@ -78,7 +82,15 @@ The compiler follows a traditional 4-phase pipeline:
 ### Current Implementation Status
 - ✅ **Lexer**: Complete C-like token support with all type keywords and module system tokens
 - ✅ **AST Structure**: Complete node hierarchy with visitor pattern
-- 🚧 **Parser**: Framework exists, core parsing logic needs implementation
+- ✅ **Parser**: Core parsing implemented with comprehensive statement and expression support
+  - ✅ Import statements (full module and selective imports)
+  - ✅ Function declarations with parameters and body blocks
+  - ✅ Variable declarations with optional initialization
+  - ✅ Control flow statements (if/else, while, return)
+  - ✅ Expression parsing (literals, identifiers, calls, qualified identifiers)
+  - ✅ Block statements with proper nesting and error recovery
+  - ✅ All primitive types integration (including unsigned types)
+  - 🚧 Advanced expressions (comparison operators, string concatenation)
 - 🚧 **Type Checker**: Framework exists, comprehensive type system with unsigned types needed
 - 🚧 **Code Generator**: Framework exists, ASM bytecode emission with unsigned arithmetic handling needed
 
@@ -222,12 +234,13 @@ float distance = math.sqrt(p.x * p.x + p.y * p.y);
 
 When working on this codebase, the main areas needing development are:
 
-1. **Parser Implementation**: Complete recursive descent parser with module support (import statements, qualified identifiers)
-2. **Module System**: Implement module resolution, symbol tables, and standard library integration
-3. **Extended Type System**: Implement comprehensive type checking for all signed/unsigned integer types, byte types, and enhanced string semantics
+1. **Advanced Expression Parsing**: Add support for comparison operators (<=, >=, ==, !=), string concatenation (^^), and complete operator precedence
+2. **Type Checker Implementation**: Implement comprehensive type checking with unsigned arithmetic validation and type compatibility checks
+3. **Module System**: Implement module resolution, symbol tables, and standard library integration
 4. **Code Generation**: Complete JVM bytecode generation with module call support and unsigned arithmetic handling
 5. **Standard Library Modules**: Implement core modules (`io`, `math`, `string`) as JVM classes
-6. **Error Handling**: Enhance error reporting with line/column information throughout pipeline
+6. **For Loop Support**: Add parsing and semantics for C-style for loops
+7. **Struct System**: Implement struct declarations and usage
 
 ## Testing Strategy
 
