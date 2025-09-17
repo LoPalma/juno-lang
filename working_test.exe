@@ -1,0 +1,5 @@
+#!/bin/bash
+# Juno program: working_test
+# Auto-generated executable wrapper
+cd "$(dirname "$0")"
+exec java working_test "$@"

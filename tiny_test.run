@@ -1,0 +1,5 @@
+#!/bin/bash
+# Juno program executable wrapper
+cd "$(dirname "$0")"
+echo "Running Juno program: tiny_test"
+echo "Result: $(java -cp . tiny_test.main 2>/dev/null || echo "Error: Need JVM-compatible main method")"

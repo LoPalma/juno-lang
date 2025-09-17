@@ -1,0 +1,24 @@
+#!/bin/bash
+# Self-extracting JVM bytecode executable
+
+# Find the start of the class data
+CLASS_START=$(awk '/^__CLASS_DATA__$/ { print NR + 1; exit 0; }' "$0")
+
+# Extract and decode the class file to a temporary file
+TEMP_CLASS=$(mktemp --suffix=.class)
+tail -n +$CLASS_START "$0" | base64 -d > "$TEMP_CLASS"
+
+# Execute the class file
+java -cp "$(dirname "$TEMP_CLASS")" "$(basename "$TEMP_CLASS" .class)" "$@"
+EXIT_CODE=$?
+
+# Clean up
+rm -f "$TEMP_CLASS"
+exit $EXIT_CODE
+
+__CLASS_DATA__yv66vgAAADQAEwEACXRpbnlfdGVzdAcAAQEAEGphdmEvbGFuZy9PYmplY3QHAAMBAAY8aW5pdD4B
+AAMoKVYMAAUABgoABAAHAQADYWRkAQAFKElJKUkBABNqYXZhL2xhbmcvVGhyb3dhYmxlBwALAQAE
+bWFpbgEAAygpSQwACQAKCgACAA8BAARDb2RlAQANU3RhY2tNYXBUYWJsZQABAAIABAAAAAAAAwAB
+AAUABgABABEAAAARAAEAAQAAAAUqtwAIsQAAAAAACQAJAAoAAQARAAAAJAACAAIAAAAGGhtgrAC/
+AAAAAQASAAAADAAB/wAEAAAAAQcADAAJAA0ADgABABEAAAAkAAIAAQAAAAwQARACuAAQOxqsAL8A
+AAABABIAAAAGAAFKBwAMAAA=
