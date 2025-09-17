@@ -20,11 +20,11 @@ a = 3.14;
 a / 2;   // error: cannot apply '/' to (any, int)
 ```
 
-All casts must be explicit. Casting uses the syntax `<type>(<expr>)`:
+All casts must be explicit. Casting uses the syntax `type<expr>`:
 
 ```juno
-int x = int(3.0);    // explicit cast
-float y = float(2);  // explicit cast
+int x = int<3.0>;    // explicit cast
+float y = float<2>;  // explicit cast
 ```
 
 ---

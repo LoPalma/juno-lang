@@ -1,0 +1,50 @@
+import io;
+
+// Struct definition
+struct Point {
+    int x;
+    int y;
+}
+
+public struct Color {
+    ubyte red;
+    ubyte green; 
+    ubyte blue;
+}
+
+int main() {
+    // Basic variables and arithmetic
+    int x = 42;
+    int y = 10;
+    
+    // Bitwise operations  
+    int bitwiseResult = x & y | (x ^ y) << 2;
+    int negated = ~x;
+    
+    // Arrays
+    int[] numbers = [1, 2, 3, 4, 5];
+    int first = numbers[0];
+    
+    // Pointers
+    int* ptr = &x;
+    int dereferenced = *ptr;
+    
+    // Struct usage
+    Point p;
+    Color red = {255u, 0u, 0u};
+    
+    // Control flow with break/continue
+    while (x > 0) {
+        if (x % 2 == 0) {
+            x = x - 1;
+            continue;
+        }
+        x = x - 1;
+        if (x < 5) {
+            break;
+        }
+    }
+    
+    io.print("Program completed successfully!");
+    return 0;
+}

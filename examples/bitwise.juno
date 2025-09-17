@@ -1,0 +1,25 @@
+import io;
+
+struct Point {
+    int x;
+    int y;
+}
+
+int main() {
+    int x = 42;
+    int y = 10;
+    
+    // Test all bitwise operators
+    int andResult = x & y;
+    int orResult = x | y;
+    int xorResult = x ^ y;
+    int notResult = ~x;
+    int leftShift = x << 2;
+    int rightShift = x >> 1;
+    
+    // Test combined expressions
+    int complex = (x & y) | ((x ^ y) << 2);
+    
+    io.print("Bitwise operations test completed!");
+    return 0;
+}

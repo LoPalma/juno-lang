@@ -9,9 +9,11 @@ import com.juno.lexer.Token;
 import com.juno.lexer.TokenType;
 import com.juno.types.PrimitiveType;
 import com.juno.types.Type;
+import com.juno.types.ArrayType;
 import com.juno.types.OptionalType;
 import com.juno.types.UnionType;
 import com.juno.types.SpecialTypes;
+import com.juno.types.PointerType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,6 +81,11 @@ public class Parser {
             return parseTypeAlias();
         }
         
+        // Handle struct declarations
+        if (match(TokenType.STRUCT)) {
+            return parseStructDeclaration(false);
+        }
+        
         // Handle type declarations (functions or variables) including optional, auto, any
         if (isTypeOrSpecialToken(peek().getType())) {
             if (checkFunctionDecl()) {
@@ -92,6 +99,8 @@ public class Parser {
         if (match(TokenType.IF)) return parseIfStatement();
         if (match(TokenType.WHILE)) return parseWhileStatement();
         if (match(TokenType.FOR)) return parseForStatement();
+        if (match(TokenType.BREAK)) return parseBreakStatement();
+        if (match(TokenType.CONTINUE)) return parseContinueStatement();
         if (match(TokenType.MODULE)) return parseModuleDeclaration();
         if (match(TokenType.RETURN)) return parseReturnStatement();
         if (match(TokenType.LEFT_BRACE)) return parseBlockStatement();
@@ -196,10 +205,46 @@ public class Parser {
     }
     
     private Expression parseComparison() throws CompilerError {
-        Expression expr = parseConcatenation();
+        Expression expr = parseBitwiseOr();
         
         while (match(TokenType.GREATER_THAN, TokenType.GREATER_EQUAL, 
                      TokenType.LESS_THAN, TokenType.LESS_EQUAL)) {
+            Token operator = previous();
+            Expression right = parseBitwiseOr();
+            expr = new BinaryExpression(expr, operator.getLexeme(), right, operator.getLine(), operator.getColumn());
+        }
+        
+        return expr;
+    }
+    
+    private Expression parseBitwiseOr() throws CompilerError {
+        Expression expr = parseBitwiseXor();
+        
+        while (match(TokenType.BITWISE_OR)) {
+            Token operator = previous();
+            Expression right = parseBitwiseXor();
+            expr = new BinaryExpression(expr, operator.getLexeme(), right, operator.getLine(), operator.getColumn());
+        }
+        
+        return expr;
+    }
+    
+    private Expression parseBitwiseXor() throws CompilerError {
+        Expression expr = parseBitwiseAnd();
+        
+        while (match(TokenType.BITWISE_XOR)) {
+            Token operator = previous();
+            Expression right = parseBitwiseAnd();
+            expr = new BinaryExpression(expr, operator.getLexeme(), right, operator.getLine(), operator.getColumn());
+        }
+        
+        return expr;
+    }
+    
+    private Expression parseBitwiseAnd() throws CompilerError {
+        Expression expr = parseConcatenation();
+        
+        while (match(TokenType.BITWISE_AND)) {
             Token operator = previous();
             Expression right = parseConcatenation();
             expr = new BinaryExpression(expr, operator.getLexeme(), right, operator.getLine(), operator.getColumn());
@@ -209,13 +254,25 @@ public class Parser {
     }
     
     private Expression parseConcatenation() throws CompilerError {
-        Expression expr = parseAdditive();
+        Expression expr = parseShift();
         
         while (checkStringConcat()) {
             advance(); // consume first ^
             advance(); // consume second ^
-            Expression right = parseAdditive();
+            Expression right = parseShift();
             expr = new BinaryExpression(expr, "^^", right, expr.getLine(), expr.getColumn());
+        }
+        
+        return expr;
+    }
+    
+    private Expression parseShift() throws CompilerError {
+        Expression expr = parseAdditive();
+        
+        while (match(TokenType.LEFT_SHIFT, TokenType.RIGHT_SHIFT)) {
+            Token operator = previous();
+            Expression right = parseAdditive();
+            expr = new BinaryExpression(expr, operator.getLexeme(), right, operator.getLine(), operator.getColumn());
         }
         
         return expr;
@@ -251,7 +308,21 @@ public class Parser {
             return parseCastExpression();
         }
         
-        if (match(TokenType.MINUS, TokenType.PLUS, TokenType.LOGICAL_NOT)) {
+        // Address-of operator: &variable
+        if (match(TokenType.BITWISE_AND)) {
+            Token operator = previous();
+            Expression operand = parseUnary();
+            return new AddressOfExpression(operand, operator.getLine(), operator.getColumn());
+        }
+        
+        // Dereference operator: *pointer (only if not multiplication)
+        if (match(TokenType.MULTIPLY) && !isMultiplication()) {
+            Token operator = previous();
+            Expression operand = parseUnary();
+            return new DereferenceExpression(operand, operator.getLine(), operator.getColumn());
+        }
+        
+        if (match(TokenType.MINUS, TokenType.PLUS, TokenType.LOGICAL_NOT, TokenType.BITWISE_NOT)) {
             Token operator = previous();
             Expression right = parseUnary();
             return new UnaryExpression(operator.getLexeme(), right, operator.getLine(), operator.getColumn());
@@ -260,12 +331,36 @@ public class Parser {
         return parseCall();
     }
     
+    /**
+     * Helper to distinguish between dereference (*ptr) and multiplication (a * b).
+     * This is a simple heuristic - dereference appears at the start of expressions.
+     */
+    private boolean isMultiplication() {
+        // Back up one token to see the context before *
+        int prevIndex = current - 2;
+        if (prevIndex < 0) {
+            return false; // At beginning, must be dereference
+        }
+        
+        Token prevToken = tokens.get(prevIndex);
+        TokenType prevType = prevToken.getType();
+        
+        // If previous token could end an expression, this is likely multiplication
+        return prevType == TokenType.IDENTIFIER ||
+               prevType == TokenType.INTEGER_LITERAL ||
+               prevType == TokenType.FLOAT_LITERAL ||
+               prevType == TokenType.RIGHT_PAREN ||
+               prevType == TokenType.RIGHT_BRACKET;
+    }
+    
     private Expression parseCall() throws CompilerError {
         Expression expr = parsePrimary();
         
         while (true) {
             if (match(TokenType.LEFT_PAREN)) {
                 expr = finishCall(expr);
+            } else if (match(TokenType.LEFT_BRACKET)) {
+                expr = finishArrayIndex(expr);
             } else {
                 break;
             }
@@ -285,6 +380,12 @@ public class Parser {
         
         Token paren = consume(TokenType.RIGHT_PAREN, "Expected ')' after arguments.");
         return new CallExpression(callee, arguments, paren.getLine(), paren.getColumn());
+    }
+    
+    private Expression finishArrayIndex(Expression array) throws CompilerError {
+        Expression index = parseExpression();
+        Token bracket = consume(TokenType.RIGHT_BRACKET, "Expected ']' after array index.");
+        return new ArrayIndexExpression(array, index, array.getLine(), array.getColumn());
     }
     
     private Expression parsePrimary() throws CompilerError {
@@ -307,16 +408,16 @@ public class Parser {
             return new LiteralExpression(false, token.getLine(), token.getColumn());
         }
         
-        // Numeric literals
+        // Numeric literals - use lexer's literal value directly
         if (match(TokenType.INTEGER_LITERAL)) {
             Token token = previous();
-            Object value = parseNumberLiteral(token.getLexeme());
+            Object value = token.getLiteral(); // Use lexer's parsed value
             return new LiteralExpression(value, token.getLine(), token.getColumn());
         }
         
         if (match(TokenType.FLOAT_LITERAL)) {
             Token token = previous();
-            Object value = parseNumberLiteral(token.getLexeme());
+            Object value = token.getLiteral(); // Use lexer's parsed value
             return new LiteralExpression(value, token.getLine(), token.getColumn());
         }
         
@@ -347,6 +448,21 @@ public class Parser {
             }
             
             return new IdentifierExpression(name.getLexeme(), name.getLine(), name.getColumn());
+        }
+        
+        // Array literals: [1, 2, 3] or ["a", "b"]
+        if (match(TokenType.LEFT_BRACKET)) {
+            Token startToken = previous();
+            List<Expression> elements = new ArrayList<>();
+            
+            if (!check(TokenType.RIGHT_BRACKET)) {
+                do {
+                    elements.add(parseExpression());
+                } while (match(TokenType.COMMA));
+            }
+            
+            consume(TokenType.RIGHT_BRACKET, "Expected ']' after array elements.");
+            return new ArrayLiteralExpression(elements, startToken.getLine(), startToken.getColumn());
         }
         
         // Parenthesized expressions
@@ -422,6 +538,10 @@ public class Parser {
     // ========== STATEMENT PARSING ==========
     
     private Statement parsePublicDeclaration() throws CompilerError {
+        if (match(TokenType.STRUCT)) {
+            return parseStructDeclaration(true);
+        }
+        
         if (isTypeToken(peek().getType())) {
             if (checkFunctionDecl()) {
                 return parseFunctionDeclaration(true);
@@ -430,7 +550,7 @@ public class Parser {
             }
         }
         
-        throw error(ErrorCode.BAD_SYNTAX, peek(), "Expected function or variable declaration after 'public'.");
+        throw error(ErrorCode.BAD_SYNTAX, peek(), "Expected function, variable, or struct declaration after 'public'.");
     }
     
     private FunctionDeclaration parseFunctionDeclaration(boolean isPublic) throws CompilerError {
@@ -543,6 +663,28 @@ public class Parser {
         return new TypeAlias(aliasName, aliasedType, typeToken.getLine(), typeToken.getColumn());
     }
     
+    private StructDeclaration parseStructDeclaration(boolean isPublic) throws CompilerError {
+        Token structToken = previous();
+        Token nameToken = consume(TokenType.IDENTIFIER, "Expected struct name.");
+        String structName = nameToken.getLexeme();
+        
+        consume(TokenType.LEFT_BRACE, "Expected '{' before struct fields.");
+        
+        List<StructDeclaration.Field> fields = new ArrayList<>();
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            Token fieldTypeToken = consumeType("Expected field type.");
+            Type fieldType = getTypeFromToken(fieldTypeToken);
+            Token fieldNameToken = consume(TokenType.IDENTIFIER, "Expected field name.");
+            String fieldName = fieldNameToken.getLexeme();
+            consume(TokenType.SEMICOLON, "Expected ';' after field declaration.");
+            
+            fields.add(new StructDeclaration.Field(fieldType, fieldName));
+        }
+        
+        consume(TokenType.RIGHT_BRACE, "Expected '}' after struct fields.");
+        return new StructDeclaration(structName, fields, isPublic, structToken.getLine(), structToken.getColumn());
+    }
+    
     private Type parseUnionType() throws CompilerError {
         Type type = parseBasicType();
         
@@ -576,7 +718,44 @@ public class Parser {
         
         if (isTypeToken(peek().getType())) {
             Token typeToken = advance();
-            return getTypeFromToken(typeToken);
+            Type baseType = getTypeFromToken(typeToken);
+            
+            // Check for array type: type[] or type[size]
+            while (match(TokenType.LEFT_BRACKET)) {
+                if (match(TokenType.RIGHT_BRACKET)) {
+                    // Dynamic array: type[]
+                    baseType = new ArrayType(baseType);
+                } else {
+                    // Fixed-size array: type[size]
+                    if (!check(TokenType.INTEGER_LITERAL)) {
+                        throw error(ErrorCode.BAD_SYNTAX, peek(), "Expected integer literal in array size.");
+                    }
+                    Token sizeToken = advance();
+                    Object sizeValue = sizeToken.getLiteral();
+                    int size;
+                    if (sizeValue instanceof Integer) {
+                        size = (Integer) sizeValue;
+                    } else if (sizeValue instanceof Long) {
+                        size = ((Long) sizeValue).intValue();
+                    } else {
+                        throw error(ErrorCode.BAD_SYNTAX, sizeToken, "Array size must be an integer.");
+                    }
+                    
+                    if (size <= 0) {
+                        throw error(ErrorCode.BAD_SYNTAX, sizeToken, "Array size must be positive.");
+                    }
+                    
+                    baseType = new ArrayType(baseType, size);
+                    consume(TokenType.RIGHT_BRACKET, "Expected ']' after array size.");
+                }
+            }
+            
+            // Check for pointer type: type*
+            while (match(TokenType.MULTIPLY)) {
+                baseType = new PointerType(baseType);
+            }
+            
+            return baseType;
         }
         
         throw error(ErrorCode.BAD_SYNTAX, peek(), "Expected type.");
@@ -592,6 +771,18 @@ public class Parser {
         
         consume(TokenType.SEMICOLON, "Expected ';' after return value.");
         return new ReturnStatement(value, returnToken.getLine(), returnToken.getColumn());
+    }
+    
+    private BreakStatement parseBreakStatement() throws CompilerError {
+        Token breakToken = previous();
+        consume(TokenType.SEMICOLON, "Expected ';' after break.");
+        return new BreakStatement(breakToken.getLine(), breakToken.getColumn());
+    }
+    
+    private ContinueStatement parseContinueStatement() throws CompilerError {
+        Token continueToken = previous();
+        consume(TokenType.SEMICOLON, "Expected ';' after continue.");
+        return new ContinueStatement(continueToken.getLine(), continueToken.getColumn());
     }
     
     private BlockStatement parseBlockStatement() throws CompilerError {

@@ -1,47 +1,66 @@
-/* C-like JVM Language Grammar - Orthodox BNF */
-/* Complete BNF specification with proper rules */
-/* File extension: .cl (C-Like) */
+/* C-like JVM Language Grammar - Juno Language */
+/* Complete BNF specification reflecting current implementation */
+/* File extension: .cl (C-Like) or .juno */
 
 /* PROGRAM STRUCTURE */
 
-<program>           ::= <declaration_list>
+<program>           ::= <statement_list>
                       | /* empty */
 
-<declaration_list>  ::= <declaration>
-                      | <declaration_list> <declaration>
+<statement_list>    ::= <statement>
+                      | <statement_list> <statement>
 
-<declaration>       ::= <module_declaration>
-                      | <import_declaration> 
+<statement>         ::= <declaration>
+                      | <control_statement>
+                      | <expression_statement>
+                      | <block_statement>
+
+<declaration>       ::= <import_declaration>
+                      | <module_declaration>
                       | <function_declaration>
                       | <variable_declaration>
-                      | <struct_declaration>
+                      | <type_alias_declaration>
                       | <public_declaration>
 
 /* MODULE SYSTEM */
 
-<module_declaration> ::= "module" <identifier> ";"
+<module_declaration> ::= "module" <identifier> "{" <statement_list> "}"
 
-<import_declaration> ::= "import" <qualified_identifier> ";"
-                       | "import" <qualified_identifier> <import_list> ";"
-
-<import_list>       ::= "{" <identifier_list> "}"
-
-<qualified_identifier> ::= <identifier>
-                         | <qualified_identifier> "." <identifier>
+<import_declaration> ::= "import" <identifier> ";"
+                       | "import" <identifier> "." "{" <identifier_list> "}" ";"
 
 <identifier_list>   ::= <identifier>
                       | <identifier_list> "," <identifier>
 
+<qualified_identifier> ::= <identifier> "." <identifier>
+
+<public_declaration> ::= "public" <function_declaration>
+                       | "public" <variable_declaration>
+                       | "public" <type_alias_declaration>
+
 /* TYPE SYSTEM */
 
-<type>              ::= <primitive_type>
-                      | <array_type>
+<type>              ::= <union_type>
+
+<union_type>        ::= <basic_type>
+                      | <union_type> "|" <basic_type>
+
+<basic_type>        ::= <primitive_type>
+                      | <optional_type>
+                      | <auto_type>
+                      | <any_type>
                       | <struct_type>
+
+<optional_type>     ::= "optional" <basic_type>
+
+<auto_type>         ::= "auto"
+
+<any_type>          ::= "any"
 
 <primitive_type>    ::= <signed_integer_type>
                       | <unsigned_integer_type>
                       | <floating_point_type>
-                      | <other_type>
+                      | <other_primitive_type>
 
 <signed_integer_type> ::= "byte"
                         | "short"
@@ -56,15 +75,14 @@
 <floating_point_type> ::= "float"
                         | "double"
 
-<other_type>        ::= "char"
-                      | "string"
-                      | "bool"
-                      | "void"
-
-<array_type>        ::= <type> "[" "]"
-                      | <type> "[" <integer_literal> "]"
+<other_primitive_type> ::= "char"
+                         | "string"
+                         | "bool"
+                         | "void"
 
 <struct_type>       ::= <identifier>
+
+<type_alias_declaration> ::= "type" <identifier> "=" <type> ";"
 
 /* DECLARATIONS */
 
@@ -79,63 +97,44 @@
 <variable_declaration> ::= <type> <identifier> ";"
                          | <type> <identifier> "=" <expression> ";"
 
-<struct_declaration> ::= "struct" <identifier> "{" "}"
-                       | "struct" <identifier> "{" <struct_member_list> "}"
+/* CONTROL STATEMENTS */
 
-<struct_member_list> ::= <struct_member>
-                       | <struct_member_list> <struct_member>
-
-<struct_member>     ::= <type> <identifier> ";"
-
-<public_declaration> ::= "public" <function_declaration>
-                       | "public" <variable_declaration>
-                       | "public" <struct_declaration>
-
-/* STATEMENTS */
-
-<statement>         ::= <block_statement>
-                      | <expression_statement>
-                      | <if_statement>
+<control_statement> ::= <if_statement>
                       | <while_statement>
-                      | <for_statement>
+                      | <for_in_statement>
                       | <return_statement>
-                      | <break_statement>
-                      | <continue_statement>
-                      | <variable_declaration>
-
-<statement_list>    ::= <statement>
-                      | <statement_list> <statement>
 
 <block_statement>   ::= "{" "}"
                       | "{" <statement_list> "}"
 
 <expression_statement> ::= <expression> ";"
 
-<if_statement>      ::= "if" "(" <expression> ")" <statement>
-                      | "if" "(" <expression> ")" <statement> "else" <statement>
+<if_statement>      ::= "if" <expression> <statement>
+                      | "if" <expression> <statement> "else" <statement>
 
-<while_statement>   ::= "while" "(" <expression> ")" <statement>
+<while_statement>   ::= "while" <expression> <statement>
 
-<for_statement>     ::= "for" "(" ";" ";" ")" <statement>
-                      | "for" "(" <for_init> ";" ";" ")" <statement>
-                      | "for" "(" ";" <expression> ";" ")" <statement>
-                      | "for" "(" ";" ";" <expression> ")" <statement>
-                      | "for" "(" <for_init> ";" <expression> ";" ")" <statement>
-                      | "for" "(" <for_init> ";" ";" <expression> ")" <statement>
-                      | "for" "(" ";" <expression> ";" <expression> ")" <statement>
-                      | "for" "(" <for_init> ";" <expression> ";" <expression> ")" <statement>
-
-<for_init>          ::= <variable_declaration>
-                      | <expression>
+<for_in_statement>  ::= "for" <type> <identifier> "in" <expression> <statement>
+                      | "for" <type> <identifier> "=" <expression> "in" <expression> <statement>
 
 <return_statement>  ::= "return" ";"
                       | "return" <expression> ";"
 
-<break_statement>   ::= "break" ";"
-
-<continue_statement> ::= "continue" ";"
-
 /* EXPRESSIONS */
+/* Expression precedence (highest to lowest):
+ * 1. Primary expressions (literals, identifiers, parentheses)
+ * 2. Function calls
+ * 3. Unary operators (-, +, !)
+ * 4. Cast expressions (<type>(expr))
+ * 5. Multiplicative (*, /, %)
+ * 6. Additive (+, -)
+ * 7. String concatenation (^^)
+ * 8. Relational (<, <=, >, >=)
+ * 9. Equality (==, !=)
+ * 10. Logical AND (&&)
+ * 11. Logical OR (||)
+ * 12. Assignment (=)
+ */
 
 <expression>        ::= <assignment_expression>
 
@@ -145,31 +144,18 @@
 <logical_or_expression> ::= <logical_and_expression>
                           | <logical_or_expression> "||" <logical_and_expression>
 
-<logical_and_expression> ::= <bitwise_or_expression>
-                           | <logical_and_expression> "&&" <bitwise_or_expression>
-
-<bitwise_or_expression> ::= <bitwise_xor_expression>
-                          | <bitwise_or_expression> "|" <bitwise_xor_expression>
-
-<bitwise_xor_expression> ::= <bitwise_and_expression>
-                           | <bitwise_xor_expression> "^" <bitwise_and_expression>
-
-<bitwise_and_expression> ::= <equality_expression>
-                           | <bitwise_and_expression> "&" <equality_expression>
+<logical_and_expression> ::= <equality_expression>
+                           | <logical_and_expression> "&&" <equality_expression>
 
 <equality_expression> ::= <relational_expression>
                         | <equality_expression> "==" <relational_expression>
                         | <equality_expression> "!=" <relational_expression>
 
-<relational_expression> ::= <shift_expression>
-                          | <relational_expression> "<" <shift_expression>
-                          | <relational_expression> "<=" <shift_expression>
-                          | <relational_expression> ">" <shift_expression>
-                          | <relational_expression> ">=" <shift_expression>
-
-<shift_expression>  ::= <concatenation_expression>
-                      | <shift_expression> "<<" <concatenation_expression>
-                      | <shift_expression> ">>" <concatenation_expression>
+<relational_expression> ::= <concatenation_expression>
+                          | <relational_expression> "<" <concatenation_expression>
+                          | <relational_expression> "<=" <concatenation_expression>
+                          | <relational_expression> ">" <concatenation_expression>
+                          | <relational_expression> ">=" <concatenation_expression>
 
 <concatenation_expression> ::= <additive_expression>
                              | <concatenation_expression> "^^" <additive_expression>
@@ -178,32 +164,30 @@
                         | <additive_expression> "+" <multiplicative_expression>
                         | <additive_expression> "-" <multiplicative_expression>
 
-<multiplicative_expression> ::= <cast_expression>
-                              | <multiplicative_expression> "*" <cast_expression>
-                              | <multiplicative_expression> "/" <cast_expression>
-                              | <multiplicative_expression> "%" <cast_expression>
+<multiplicative_expression> ::= <unary_expression>
+                              | <multiplicative_expression> "*" <unary_expression>
+                              | <multiplicative_expression> "/" <unary_expression>
+                              | <multiplicative_expression> "%" <unary_expression>
 
-<cast_expression>   ::= <unary_expression>
-                      | <type> "(" <unary_expression> ")"
-
-<unary_expression>  ::= <postfix_expression>
+<unary_expression>  ::= <call_expression>
+                      | <cast_expression>
                       | "+" <unary_expression>
                       | "-" <unary_expression>
                       | "!" <unary_expression>
-                      | "~" <unary_expression>
 
-<postfix_expression> ::= <primary_expression>
-                       | <postfix_expression> "[" <expression> "]"
-                       | <postfix_expression> "(" ")"
-                       | <postfix_expression> "(" <argument_list> ")"
-                       | <postfix_expression> "." <identifier>
+<cast_expression>   ::= "<" <type> ">" "(" <expression> ")"
+                      | <type> "<" <expression> ">"
+
+<call_expression>   ::= <primary_expression>
+                      | <call_expression> "(" ")"
+                      | <call_expression> "(" <argument_list> ")"
 
 <primary_expression> ::= <literal>
                        | <identifier>
                        | <qualified_identifier>
                        | "(" <expression> ")"
 
-/* LITERALS */
+/* LITERALS AND ARGUMENTS */
 
 <literal>           ::= <integer_literal>
                       | <float_literal>
@@ -230,12 +214,7 @@
 <character_literal> ::= "'" <character_content> "'"
 
 <character_content> ::= <escape_sequence>
-                      | <letter>
-                      | <digit>
-                      | " " | "!" | "#" | "$" | "%" | "&" | "(" | ")" | "*"
-                      | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">"
-                      | "?" | "@" | "[" | "]" | "^" | "`" | "{" | "|"
-                      | "}" | "~"
+                      | /* any printable character except ' and \\ */
 
 <string_literal>    ::= '"' '"'
                       | '"' <string_content_list> '"'
@@ -244,12 +223,7 @@
                         | <string_content_list> <string_content>
 
 <string_content>    ::= <escape_sequence>
-                      | <letter>
-                      | <digit>
-                      | " " | "!" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*"
-                      | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">"
-                      | "?" | "@" | "[" | "\\" | "]" | "^" | "_" | "`" | "{" | "|"
-                      | "}" | "~"
+                      | /* any printable character except " and \\ */
 
 <escape_sequence>   ::= "\\" "n"
                       | "\\" "t"
@@ -260,8 +234,6 @@
                       | "\\" "0"
 
 <boolean_literal>   ::= "true" | "false"
-
-/* FUNCTION CALLS */
 
 <argument_list>     ::= <expression>
                       | <argument_list> "," <expression>
@@ -287,3 +259,11 @@
                       | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
                       | "U" | "V" | "W" | "X" | "Y" | "Z"
                       | "_"
+
+/* KEYWORDS AND OPERATORS */
+/* Keywords: auto, any, optional, type, import, module, public */
+/* Types: void, bool, char, string, byte, ubyte, short, ushort, int, uint, long, ulong, float, double */
+/* Control: if, else, while, for, in, return, true, false */
+/* Operators: +, -, *, /, %, =, ==, !=, <, <=, >, >=, &&, ||, !, ^^ */
+/* Delimiters: (, ), {, }, [, ], ;, ,, . */
+/* Casts: <type>(expr) or type<expr> */

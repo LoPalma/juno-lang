@@ -3,6 +3,7 @@ package com.juno.ast;
 // Import types package explicitly
 // Don't import com.juno.types.* to avoid conflicts - import specific classes instead
 import com.juno.types.PrimitiveType;
+import com.juno.types.ArrayType;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
@@ -31,6 +32,10 @@ public class CodeGenerator implements ASTVisitor<Void> {
     private com.juno.types.Type currentFunctionReturnType;  // Track current function's return type
     private int nextLocalSlot;
     private int labelCounter = 0;  // Counter for unique labels
+    
+    // Break/continue label stack for loops
+    private java.util.Stack<Label> breakLabels = new java.util.Stack<>();
+    private java.util.Stack<Label> continueLabels = new java.util.Stack<>();
     
     // Jasmin assembly generation
     private PrintWriter jasminWriter;
@@ -149,6 +154,14 @@ public class CodeGenerator implements ASTVisitor<Void> {
     @Override
     public Void visitTypeAlias(TypeAlias alias) {
         // com.juno.types.Type aliases are compile-time only, no runtime bytecode needed
+        return null;
+    }
+    
+    @Override
+    public Void visitStructDeclaration(StructDeclaration structDecl) {
+        jasminComment("Struct declaration: " + structDecl.getName());
+        // TODO: Generate JVM class for struct
+        // For now, structs are not fully implemented in code generation
         return null;
     }
     
@@ -282,7 +295,35 @@ public class CodeGenerator implements ASTVisitor<Void> {
         return null;
     }
     
-    // ===== STATEMENTS =====
+    @Override
+    public Void visitBreakStatement(BreakStatement stmt) {
+        if (breakLabels.isEmpty()) {
+            throw new RuntimeException("break statement not inside loop at line " + stmt.getLine());
+        }
+        
+        jasminComment("Break statement");
+        Label breakLabel = breakLabels.peek();
+        methodGenerator.visitJumpInsn(GOTO, breakLabel);
+        jasminInstruction("goto break_target");
+        
+        return null;
+    }
+    
+    @Override
+    public Void visitContinueStatement(ContinueStatement stmt) {
+        if (continueLabels.isEmpty()) {
+            throw new RuntimeException("continue statement not inside loop at line " + stmt.getLine());
+        }
+        
+        jasminComment("Continue statement");
+        Label continueLabel = continueLabels.peek();
+        methodGenerator.visitJumpInsn(GOTO, continueLabel);
+        jasminInstruction("goto continue_target");
+        
+        return null;
+    }
+    
+    // ===== ARRAY HELPER METHODS =====
     
     @Override
     public Void visitBlockStatement(BlockStatement block) {
@@ -295,8 +336,11 @@ public class CodeGenerator implements ASTVisitor<Void> {
     @Override
     public Void visitExpressionStatement(ExpressionStatement exprStmt) {
         exprStmt.getExpression().accept(this);
-        // Pop the result if it's not void (expression statements discard results)
-        methodGenerator.visitInsn(POP);
+        // Pop the result only if the expression returns a value
+        Expression expr = exprStmt.getExpression();
+        if (expr.getType() != null && !"void".equals(expr.getType().getName())) {
+            methodGenerator.visitInsn(POP);
+        }
         return null;
     }
     
@@ -364,22 +408,39 @@ public class CodeGenerator implements ASTVisitor<Void> {
     public Void visitWhileStatement(WhileStatement whileStmt) {
         Label startLabel = methodGenerator.newLabel();
         Label endLabel = methodGenerator.newLabel();
+        int startLabelId = ++labelCounter;
+        int endLabelId = ++labelCounter;
+        
+        jasminComment("While loop start");
+        
+        // Push loop labels for break/continue
+        breakLabels.push(endLabel);
+        continueLabels.push(startLabel);
         
         // Start of loop
         methodGenerator.visitLabel(startLabel);
+        jasminLabel("while_start_" + startLabelId);
         
         // Generate condition
         whileStmt.getCondition().accept(this);
         methodGenerator.visitJumpInsn(IFEQ, endLabel);  // Exit if false
+        jasminInstruction("ifeq while_end_" + endLabelId);
         
         // Generate body
         whileStmt.getBody().accept(this);
         
         // Jump back to condition
         methodGenerator.visitJumpInsn(GOTO, startLabel);
+        jasminInstruction("goto while_start_" + startLabelId);
         
         // End of loop
         methodGenerator.visitLabel(endLabel);
+        jasminLabel("while_end_" + endLabelId);
+        
+        // Pop loop labels
+        breakLabels.pop();
+        continueLabels.pop();
+        
         return null;
     }
     
@@ -499,6 +560,9 @@ public class CodeGenerator implements ASTVisitor<Void> {
                 break;
             case "||":
                 generateLogicalOr();
+                break;
+            case "^^":
+                generateStringConcatenation();
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported binary operator: " + operator);
@@ -661,9 +725,16 @@ public class CodeGenerator implements ASTVisitor<Void> {
         Expression function = expr.getFunction();
         String functionName;
         
-        // Extract function name (for now, only support simple identifier functions)
+        // Extract function name - support both simple and qualified calls
         if (function instanceof IdentifierExpression) {
             functionName = ((IdentifierExpression) function).getName();
+        } else if (function instanceof QualifiedIdentifier) {
+            QualifiedIdentifier qualId = (QualifiedIdentifier) function;
+            if ("Io".equals(qualId.getModuleName())) {
+                generateIoCall(qualId.getIdentifier(), expr.getArguments());
+                return null;
+            }
+            throw new UnsupportedOperationException("Unsupported qualified call: " + qualId.getFullName());
         } else {
             throw new UnsupportedOperationException("Only simple function calls supported: " + function.getClass());
         }
@@ -684,8 +755,13 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     @Override
     public Void visitQualifiedIdentifier(QualifiedIdentifier expr) {
-        // TODO: Implement module-qualified identifiers
-        throw new UnsupportedOperationException("Qualified identifiers not yet supported in code generation");
+        // Handle runtime module calls
+        if ("Io".equals(expr.getModuleName())) {
+            // This is handled in visitCallExpression for Io.function() calls
+            return null;
+        }
+        
+        throw new UnsupportedOperationException("Qualified identifiers not yet supported: " + expr.getFullName());
     }
     
     @Override
@@ -700,6 +776,120 @@ public class CodeGenerator implements ASTVisitor<Void> {
         generateTypeConversion(sourceType, targetType);
         
         return null;
+    }
+    
+    @Override
+    public Void visitArrayLiteralExpression(ArrayLiteralExpression expr) {
+        ArrayType arrayType = (ArrayType) expr.getType();
+        com.juno.types.Type elementType = arrayType.getElementType();
+        int arraySize = expr.getElements().size();
+        
+        jasminComment("Array literal: " + arrayType.getName() + " with " + arraySize + " elements");
+        
+        // Push array size
+        methodGenerator.visitIntInsn(BIPUSH, arraySize);
+        jasminInstruction("bipush " + arraySize);
+        
+        // Create array of appropriate type
+        String elementJvmType = getJVMTypeDescriptor(elementType);
+        if (elementType instanceof PrimitiveType && !"string".equals(elementType.getName())) {
+            PrimitiveType primType = (PrimitiveType) elementType;
+            int arrayTypeCode = getJVMArrayTypeCode(primType);
+            methodGenerator.visitIntInsn(NEWARRAY, arrayTypeCode);
+            jasminInstruction("newarray " + getJVMArrayTypeName(primType));
+        } else {
+            // Object array (including string arrays)
+            String className = elementJvmType.startsWith("L") ? 
+                elementJvmType.substring(1, elementJvmType.length()-1) : elementJvmType;
+            methodGenerator.visitTypeInsn(ANEWARRAY, className);
+            jasminInstruction("anewarray " + className);
+        }
+        
+        // Fill array with elements
+        for (int i = 0; i < arraySize; i++) {
+            methodGenerator.visitInsn(DUP); // Duplicate array reference
+            methodGenerator.visitIntInsn(BIPUSH, i); // Push index
+            jasminInstruction("dup");
+            jasminInstruction("bipush " + i);
+            
+            // Generate element value
+            expr.getElements().get(i).accept(this);
+            
+            // Store in array
+            generateArrayStore(elementType);
+        }
+        
+        return null;
+    }
+    
+    @Override
+    public Void visitArrayIndexExpression(ArrayIndexExpression expr) {
+        jasminComment("Array index access");
+        
+        // Generate array reference
+        expr.getArray().accept(this);
+        
+        // Generate index
+        expr.getIndex().accept(this);
+        
+        // Load from array
+        com.juno.types.Type elementType = expr.getType();
+        generateArrayLoad(elementType);
+        
+        return null;
+    }
+    
+    @Override
+    public Void visitAddressOfExpression(AddressOfExpression expr) {
+        jasminComment("Address-of operator (&)");
+        
+        // In JVM, we implement pointers as objects that hold references
+        // For now, we'll use a simple approach where &var creates a reference holder
+        
+        Expression operand = expr.getOperand();
+        if (operand instanceof IdentifierExpression) {
+            IdentifierExpression identExpr = (IdentifierExpression) operand;
+            String varName = identExpr.getName();
+            
+            // Create a simple pointer object that holds the variable reference
+            // This is a simplified implementation - in practice, we'd need a proper Pointer class
+            Integer slot = localVariables.get(varName);
+            if (slot != null) {
+                // For local variables, store the slot number in the pointer object
+                methodGenerator.visitIntInsn(BIPUSH, slot);
+                jasminInstruction("bipush " + slot);
+                
+                // Create Integer wrapper for the slot reference
+                methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+                jasminInstruction("invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;");
+            } else {
+                throw new UnsupportedOperationException("Address-of for global variables not yet supported");
+            }
+        } else {
+            throw new UnsupportedOperationException("Address-of only supported for simple identifiers currently");
+        }
+        
+        return null;
+    }
+    
+    @Override
+    public Void visitDereferenceExpression(DereferenceExpression expr) {
+        jasminComment("Dereference operator (*)");
+        
+        // Generate the pointer expression
+        expr.getOperand().accept(this);
+        
+        // For our simplified implementation, the pointer holds a slot number as Integer
+        // Cast to Integer and extract the slot
+        methodGenerator.visitTypeInsn(CHECKCAST, "java/lang/Integer");
+        methodGenerator.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false);
+        jasminInstruction("checkcast java/lang/Integer");
+        jasminInstruction("invokevirtual java/lang/Integer/intValue()I");
+        
+        // Now we have the slot number on the stack
+        // For simplicity, we'll assume int type and generate iload with computed slot
+        // This is a hack - in practice we'd need proper slot tracking
+        throw new UnsupportedOperationException("Pointer dereference requires runtime slot loading - not yet implemented");
     }
     
     // ===== UTILITY METHODS =====
@@ -763,6 +953,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
                 case "string": return "Ljava/lang/String;";
                 default: throw new UnsupportedOperationException("Unsupported primitive type: " + type.getName());
             }
+        } else if (type instanceof ArrayType) {
+            return type.getJVMDescriptor();
         } else {
             // For now, treat complex types as Object
             return "Ljava/lang/Object;";
@@ -1013,6 +1205,57 @@ public class CodeGenerator implements ASTVisitor<Void> {
         methodGenerator.visitInsn(ICONST_1);
         
         methodGenerator.visitLabel(endLabel);
+    }
+    
+    private void generateStringConcatenation() {
+        // At this point, stack has: [left_operand, right_operand]
+        // We need to convert both to strings and concatenate left + right
+        
+        // Store right operand temporarily
+        methodGenerator.visitInsn(SWAP);  // [right, left]
+        jasminInstruction("swap");
+        
+        // Convert left operand to string
+        methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false);
+        jasminInstruction("invokestatic java/lang/String/valueOf(Ljava/lang/Object;)Ljava/lang/String;");
+        // Stack: [right, left_string]
+        
+        methodGenerator.visitInsn(SWAP);  // [left_string, right]
+        jasminInstruction("swap");
+        
+        // Convert right operand to string
+        methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false);
+        jasminInstruction("invokestatic java/lang/String/valueOf(Ljava/lang/Object;)Ljava/lang/String;");
+        // Stack: [left_string, right_string]
+        
+        // Concatenate strings: left.concat(right)
+        methodGenerator.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "concat", "(Ljava/lang/String;)Ljava/lang/String;", false);
+        jasminInstruction("invokevirtual java/lang/String/concat(Ljava/lang/String;)Ljava/lang/String;");
+    }
+    
+    private void generateIoCall(String function, java.util.List<Expression> arguments) {
+        // Generate arguments
+        for (Expression arg : arguments) {
+            arg.accept(this);
+        }
+        
+        // Map to runtime calls
+        String descriptor;
+        switch (function) {
+            case "print":
+            case "println":
+            case "report":
+                descriptor = "(Ljava/lang/String;)V";
+                break;
+            case "scan":
+                descriptor = "()Ljava/lang/String;";
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown Io function: " + function);
+        }
+        
+        methodGenerator.visitMethodInsn(INVOKESTATIC, "com/juno/runtime/Io", function, descriptor, false);
+        jasminInstruction("invokestatic com/juno/runtime/Io/" + function + descriptor);
     }
     
     private String getJumpInstructionName(int opcode) {
@@ -1482,5 +1725,149 @@ public class CodeGenerator implements ASTVisitor<Void> {
         
         // Clear method generator
         methodGenerator = null;
+    }
+    
+    // ===== ARRAY HELPER METHODS =====
+    
+    /**
+     * Get JVM array type code for primitive types used with NEWARRAY instruction.
+     */
+    private int getJVMArrayTypeCode(PrimitiveType primType) {
+        switch (primType.getName()) {
+            case "bool": return T_BOOLEAN;
+            case "byte": case "ubyte": return T_BYTE;
+            case "short": case "ushort": return T_SHORT;
+            case "int": case "uint": return T_INT;
+            case "long": case "ulong": return T_LONG;
+            case "float": return T_FLOAT;
+            case "double": return T_DOUBLE;
+            case "char": return T_CHAR;
+            default:
+                throw new UnsupportedOperationException("Unsupported primitive array type: " + primType.getName());
+        }
+    }
+    
+    /**
+     * Get JVM array type name for Jasmin assembly.
+     */
+    private String getJVMArrayTypeName(PrimitiveType primType) {
+        switch (primType.getName()) {
+            case "bool": return "boolean";
+            case "byte": case "ubyte": return "byte";
+            case "short": case "ushort": return "short";
+            case "int": case "uint": return "int";
+            case "long": case "ulong": return "long";
+            case "float": return "float";
+            case "double": return "double";
+            case "char": return "char";
+            default:
+                throw new UnsupportedOperationException("Unsupported primitive array type: " + primType.getName());
+        }
+    }
+    
+    /**
+     * Generate array store instruction based on element type.
+     */
+    private void generateArrayStore(com.juno.types.Type elementType) {
+        if (elementType instanceof PrimitiveType) {
+            PrimitiveType primType = (PrimitiveType) elementType;
+            switch (primType.getName()) {
+                case "bool":
+                    methodGenerator.visitInsn(BASTORE); // boolean uses byte array operations
+                    jasminInstruction("bastore");
+                    break;
+                case "byte": case "ubyte":
+                    methodGenerator.visitInsn(BASTORE);
+                    jasminInstruction("bastore");
+                    break;
+                case "short": case "ushort":
+                    methodGenerator.visitInsn(SASTORE);
+                    jasminInstruction("sastore");
+                    break;
+                case "int": case "uint":
+                    methodGenerator.visitInsn(IASTORE);
+                    jasminInstruction("iastore");
+                    break;
+                case "long": case "ulong":
+                    methodGenerator.visitInsn(LASTORE);
+                    jasminInstruction("lastore");
+                    break;
+                case "float":
+                    methodGenerator.visitInsn(FASTORE);
+                    jasminInstruction("fastore");
+                    break;
+                case "double":
+                    methodGenerator.visitInsn(DASTORE);
+                    jasminInstruction("dastore");
+                    break;
+                case "char":
+                    methodGenerator.visitInsn(CASTORE);
+                    jasminInstruction("castore");
+                    break;
+                case "string":
+                    methodGenerator.visitInsn(AASTORE); // string is object reference
+                    jasminInstruction("aastore");
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported array element type: " + primType.getName());
+            }
+        } else {
+            // Object reference
+            methodGenerator.visitInsn(AASTORE);
+            jasminInstruction("aastore");
+        }
+    }
+    
+    /**
+     * Generate array load instruction based on element type.
+     */
+    private void generateArrayLoad(com.juno.types.Type elementType) {
+        if (elementType instanceof PrimitiveType) {
+            PrimitiveType primType = (PrimitiveType) elementType;
+            switch (primType.getName()) {
+                case "bool":
+                    methodGenerator.visitInsn(BALOAD); // boolean uses byte array operations
+                    jasminInstruction("baload");
+                    break;
+                case "byte": case "ubyte":
+                    methodGenerator.visitInsn(BALOAD);
+                    jasminInstruction("baload");
+                    break;
+                case "short": case "ushort":
+                    methodGenerator.visitInsn(SALOAD);
+                    jasminInstruction("saload");
+                    break;
+                case "int": case "uint":
+                    methodGenerator.visitInsn(IALOAD);
+                    jasminInstruction("iaload");
+                    break;
+                case "long": case "ulong":
+                    methodGenerator.visitInsn(LALOAD);
+                    jasminInstruction("laload");
+                    break;
+                case "float":
+                    methodGenerator.visitInsn(FALOAD);
+                    jasminInstruction("faload");
+                    break;
+                case "double":
+                    methodGenerator.visitInsn(DALOAD);
+                    jasminInstruction("daload");
+                    break;
+                case "char":
+                    methodGenerator.visitInsn(CALOAD);
+                    jasminInstruction("caload");
+                    break;
+                case "string":
+                    methodGenerator.visitInsn(AALOAD); // string is object reference
+                    jasminInstruction("aaload");
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported array element type: " + primType.getName());
+            }
+        } else {
+            // Object reference
+            methodGenerator.visitInsn(AALOAD);
+            jasminInstruction("aaload");
+        }
     }
 }

@@ -14,6 +14,14 @@ public interface ASTVisitor<T> {
     T visitCallExpression(CallExpression expr);
     T visitQualifiedIdentifier(QualifiedIdentifier expr);
     T visitCastExpression(CastExpression expr);
+    T visitArrayLiteralExpression(ArrayLiteralExpression expr);
+    T visitArrayIndexExpression(ArrayIndexExpression expr);
+    T visitAddressOfExpression(AddressOfExpression expr);
+    T visitDereferenceExpression(DereferenceExpression expr);
+    
+    // Control flow statements
+    T visitBreakStatement(BreakStatement stmt);
+    T visitContinueStatement(ContinueStatement stmt);
     
     T visitExpressionStatement(ExpressionStatement stmt);
     T visitVariableDeclaration(VariableDeclaration stmt);
@@ -26,4 +34,5 @@ public interface ASTVisitor<T> {
     T visitImportStatement(ImportStatement stmt);
     T visitModuleDeclaration(ModuleDeclaration stmt);
     T visitTypeAlias(TypeAlias stmt);
+    T visitStructDeclaration(StructDeclaration stmt);
 }

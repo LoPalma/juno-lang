@@ -228,6 +228,51 @@ public class ASTTest {
             return null;
         }
 
+        @Override
+        public Void visitArrayLiteralExpression(ArrayLiteralExpression expr) {
+            return null;
+        }
+
+        @Override
+        public Void visitArrayIndexExpression(ArrayIndexExpression expr) {
+            return null;
+        }
+
+        @Override
+        public Void visitBreakStatement(BreakStatement stmt) {
+            return null;
+        }
+
+        @Override
+        public Void visitContinueStatement(ContinueStatement stmt) {
+            return null;
+        }
+
+        @Override
+        public Void visitForInStatement(ForInStatement stmt) {
+            return null;
+        }
+
+        @Override
+        public Void visitTypeAlias(TypeAlias stmt) {
+            return null;
+        }
+
+        @Override
+        public Void visitAddressOfExpression(AddressOfExpression expr) {
+            return null;
+        }
+
+        @Override
+        public Void visitDereferenceExpression(DereferenceExpression expr) {
+            return null;
+        }
+
+        @Override
+        public Void visitStructDeclaration(StructDeclaration stmt) {
+            return null;
+        }
+
         // Getters for test assertions
         public int getProgramCount() { return programCount; }
         public int getBinaryExpressionCount() { return binaryExpressionCount; }

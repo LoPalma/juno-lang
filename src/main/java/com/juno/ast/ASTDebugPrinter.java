@@ -135,6 +135,41 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
     }
     
     @Override
+    public String visitArrayLiteralExpression(ArrayLiteralExpression expr) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ArrayLiteral [");
+        
+        if (!expr.getElements().isEmpty()) {
+            sb.append("\n");
+            indentLevel++;
+            for (int i = 0; i < expr.getElements().size(); i++) {
+                sb.append(indent()).append(expr.getElements().get(i).accept(this));
+                if (i < expr.getElements().size() - 1) sb.append(",");
+                sb.append("\n");
+            }
+            indentLevel--;
+            sb.append(indent());
+        }
+        sb.append("]");
+        
+        return sb.toString();
+    }
+    
+    @Override
+    public String visitArrayIndexExpression(ArrayIndexExpression expr) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ArrayIndex {\n");
+        
+        indentLevel++;
+        sb.append(indent()).append("array: ").append(expr.getArray().accept(this)).append("\n");
+        sb.append(indent()).append("index: ").append(expr.getIndex().accept(this));
+        indentLevel--;
+        
+        sb.append("\n").append(indent()).append("}");
+        return sb.toString();
+    }
+    
+    @Override
     public String visitExpressionStatement(ExpressionStatement stmt) {
         return "ExprStmt { " + stmt.getExpression().accept(this) + " }";
     }
@@ -304,6 +339,66 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
     @Override
     public String visitTypeAlias(TypeAlias stmt) {
         return "TypeAlias { name: \"" + stmt.getAliasName() + "\", type: " + stmt.getAliasedType() + " }";
+    }
+    
+    @Override
+    public String visitStructDeclaration(StructDeclaration stmt) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("StructDecl");
+        if (stmt.isPublic()) sb.append("(public)");
+        sb.append(" {\n");
+        
+        indentLevel++;
+        sb.append(indent()).append("name: \"").append(stmt.getName()).append("\"\n");
+        sb.append(indent()).append("fields: [\n");
+        
+        indentLevel++;
+        for (StructDeclaration.Field field : stmt.getFields()) {
+            sb.append(indent()).append(field.type).append(" ").append(field.name).append("\n");
+        }
+        indentLevel--;
+        
+        sb.append(indent()).append("]\n");
+        indentLevel--;
+        
+        sb.append(indent()).append("}");
+        return sb.toString();
+    }
+    
+    @Override
+    public String visitBreakStatement(BreakStatement stmt) {
+        return "Break { }";
+    }
+    
+    @Override
+    public String visitContinueStatement(ContinueStatement stmt) {
+        return "Continue { }";
+    }
+    
+    @Override
+    public String visitAddressOfExpression(AddressOfExpression expr) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("AddressOf(&) {\n");
+        
+        indentLevel++;
+        sb.append(indent()).append("operand: ").append(expr.getOperand().accept(this));
+        indentLevel--;
+        
+        sb.append("\n").append(indent()).append("}");
+        return sb.toString();
+    }
+    
+    @Override
+    public String visitDereferenceExpression(DereferenceExpression expr) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Dereference(*) {\n");
+        
+        indentLevel++;
+        sb.append(indent()).append("operand: ").append(expr.getOperand().accept(this));
+        indentLevel--;
+        
+        sb.append("\n").append(indent()).append("}");
+        return sb.toString();
     }
     
     private String getTypeName(Object value) {

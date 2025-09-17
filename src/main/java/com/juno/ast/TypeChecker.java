@@ -76,6 +76,28 @@ public class TypeChecker implements ASTVisitor<Type> {
         return PrimitiveType.VOID;
     }
     
+    @Override
+    public Type visitStructDeclaration(StructDeclaration structDecl) {
+        String structName = structDecl.getName();
+        
+        // Check if struct is already declared
+        if (symbolTable.isDeclaredLocally(structName)) {
+            errorCollector.addError(new CompilerError(
+                "Struct '" + structName + "' is already declared in current scope",
+                ErrorCode.DUPLICATE_DECLARATION,
+                structDecl.getLine(), structDecl.getColumn()
+            ));
+        }
+        
+        // TODO: Add struct type to symbol table and validate field types
+        // For now, just validate that all field types are valid
+        for (StructDeclaration.Field field : structDecl.getFields()) {
+            // Field type validation would go here
+        }
+        
+        return PrimitiveType.VOID;
+    }
+    
     // ===== VARIABLE AND FUNCTION DECLARATIONS =====
     
     @Override
@@ -520,9 +542,34 @@ public class TypeChecker implements ASTVisitor<Type> {
     
     @Override
     public Type visitQualifiedIdentifier(QualifiedIdentifier expr) {
-        // For now, just return a reasonable type
-        // TODO: Implement proper module resolution
+        String moduleName = expr.getModuleName();
+        String identifier = expr.getIdentifier();
+        
+        // Handle runtime modules
+        if ("Io".equals(moduleName)) {
+            return resolveIoFunction(identifier);
+        }
+        
+        // TODO: Add other modules as needed
+        errorCollector.addError(new CompilerError(
+            "Unknown module: " + moduleName,
+            ErrorCode.UNDEFINED_IDENTIFIER,
+            expr.getLine(), expr.getColumn()
+        ));
         return PrimitiveType.VOID;
+    }
+    
+    private Type resolveIoFunction(String function) {
+        switch (function) {
+            case "print":
+            case "println":
+            case "report":
+                return PrimitiveType.VOID;
+            case "scan":
+                return PrimitiveType.STRING;
+            default:
+                return PrimitiveType.VOID;
+        }
     }
     
     @Override
@@ -541,6 +588,136 @@ public class TypeChecker implements ASTVisitor<Type> {
         
         expr.setType(targetType);
         return targetType;
+    }
+    
+    @Override
+    public Type visitArrayLiteralExpression(ArrayLiteralExpression expr) {
+        List<Expression> elements = expr.getElements();
+        
+        if (elements.isEmpty()) {
+            // Empty array - need to infer type from context or use default
+            // For now, default to int[] for empty arrays
+            Type arrayType = new ArrayType(PrimitiveType.INT);
+            expr.setType(arrayType);
+            return arrayType;
+        }
+        
+        // Type check all elements and find common type
+        Type commonType = null;
+        for (Expression element : elements) {
+            Type elementType = element.accept(this);
+            if (commonType == null) {
+                commonType = elementType;
+            } else if (!commonType.equals(elementType)) {
+                // Elements have different types - check if they're compatible
+                if (!isCompatible(elementType, commonType) && !isCompatible(commonType, elementType)) {
+                    errorCollector.addError(new CompilerError(
+                        "Array literal has incompatible element types: " + commonType + " and " + elementType,
+                        ErrorCode.TYPE_MISMATCH,
+                        expr.getLine(), expr.getColumn()
+                    ));
+                    commonType = PrimitiveType.INT; // fallback
+                    break;
+                }
+                // Use the more general type if compatible
+                if (isCompatible(commonType, elementType)) {
+                    commonType = elementType;
+                }
+            }
+        }
+        
+        Type arrayType = new ArrayType(commonType, elements.size()); // Fixed-size array from literal
+        expr.setType(arrayType);
+        return arrayType;
+    }
+    
+    @Override
+    public Type visitArrayIndexExpression(ArrayIndexExpression expr) {
+        Type arrayType = expr.getArray().accept(this);
+        Type indexType = expr.getIndex().accept(this);
+        
+        // Check that the array expression is actually an array type
+        if (!(arrayType instanceof ArrayType)) {
+            errorCollector.addError(new CompilerError(
+                "Cannot index non-array type: " + arrayType,
+                ErrorCode.TYPE_MISMATCH,
+                expr.getLine(), expr.getColumn()
+            ));
+            return PrimitiveType.INT; // fallback
+        }
+        
+        // Check that index is integer type
+        if (!(indexType instanceof PrimitiveType) || !((PrimitiveType) indexType).isInteger()) {
+            errorCollector.addError(new CompilerError(
+                "Array index must be integer type, got " + indexType,
+                ErrorCode.TYPE_MISMATCH,
+                expr.getLine(), expr.getColumn()
+            ));
+        }
+        
+        ArrayType array = (ArrayType) arrayType;
+        Type elementType = array.getElementType();
+        expr.setType(elementType);
+        return elementType;
+    }
+    
+    @Override
+    public Type visitBreakStatement(BreakStatement stmt) {
+        // TODO: Check that break is inside a loop
+        return PrimitiveType.VOID;
+    }
+    
+    @Override
+    public Type visitContinueStatement(ContinueStatement stmt) {
+        // TODO: Check that continue is inside a loop
+        return PrimitiveType.VOID;
+    }
+    
+    @Override
+    public Type visitAddressOfExpression(AddressOfExpression expr) {
+        Type operandType = expr.getOperand().accept(this);
+        
+        // Check that operand is an lvalue (can be addressed)
+        if (!isLValue(expr.getOperand())) {
+            errorCollector.addError(new CompilerError(
+                "Cannot take address of non-lvalue expression",
+                ErrorCode.TYPE_ERROR,
+                expr.getLine(), expr.getColumn()
+            ));
+        }
+        
+        PointerType pointerType = new PointerType(operandType);
+        expr.setType(pointerType);
+        return pointerType;
+    }
+    
+    @Override
+    public Type visitDereferenceExpression(DereferenceExpression expr) {
+        Type operandType = expr.getOperand().accept(this);
+        
+        // Check that operand is a pointer type
+        if (!(operandType instanceof PointerType)) {
+            errorCollector.addError(new CompilerError(
+                "Cannot dereference non-pointer type: " + operandType,
+                ErrorCode.TYPE_ERROR,
+                expr.getLine(), expr.getColumn()
+            ));
+            return PrimitiveType.INT; // fallback
+        }
+        
+        PointerType pointerType = (PointerType) operandType;
+        Type pointedType = pointerType.getPointedType();
+        expr.setType(pointedType);
+        return pointedType;
+    }
+    
+    /**
+     * Check if an expression is an lvalue (can be assigned to or addressed).
+     */
+    private boolean isLValue(Expression expr) {
+        return expr instanceof IdentifierExpression ||
+               expr instanceof ArrayIndexExpression ||
+               expr instanceof DereferenceExpression;
     }
     
     // ===== TYPE COMPATIBILITY AND UTILITY METHODS =====
