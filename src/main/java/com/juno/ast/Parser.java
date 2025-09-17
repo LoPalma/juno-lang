@@ -80,7 +80,7 @@ public class Parser {
         }
         
         // Handle type declarations (functions or variables) including optional, auto, any
-        if (isTypeToken(peek().getType()) || match(TokenType.OPTIONAL, TokenType.AUTO, TokenType.ANY)) {
+        if (isTypeOrSpecialToken(peek().getType())) {
             if (checkFunctionDecl()) {
                 return parseFunctionDeclaration(false);
             } else {
@@ -550,6 +550,10 @@ public class Parser {
                type == TokenType.UINT || type == TokenType.ULONG;
     }
     
+    private boolean isTypeOrSpecialToken(TokenType type) {
+        return isTypeToken(type) || type == TokenType.OPTIONAL || type == TokenType.AUTO || type == TokenType.ANY;
+    }
+    
     private Token consumeType(String message) throws CompilerError {
         if (isTypeToken(peek().getType())) {
             return advance();
@@ -592,7 +596,7 @@ public class Parser {
                 case IMPORT:
                     return;
                 default:
-                    if (isTypeToken(peek().getType())) {
+                    if (isTypeOrSpecialToken(peek().getType())) {
                         return;
                     }
             }
@@ -663,12 +667,30 @@ public class Parser {
     private boolean checkFunctionDecl() {
         // Look ahead to see if this is type name ( ... indicating function
         int ahead = current + 1;
-        if (ahead < tokens.size() && tokens.get(ahead).getType() == TokenType.IDENTIFIER) {
-            ahead++;
-            if (ahead < tokens.size() && tokens.get(ahead).getType() == TokenType.LEFT_PAREN) {
-                return true;
+        
+        // Handle complex type patterns like 'optional int', 'string|int', etc.
+        // Skip past type modifiers and union types to find the identifier
+        while (ahead < tokens.size()) {
+            TokenType tokenType = tokens.get(ahead).getType();
+            if (tokenType == TokenType.IDENTIFIER) {
+                // Found identifier, check if followed by '(' for function
+                ahead++;
+                if (ahead < tokens.size() && tokens.get(ahead).getType() == TokenType.LEFT_PAREN) {
+                    return true;
+                }
+                // If followed by '=' it's a variable declaration
+                if (ahead < tokens.size() && tokens.get(ahead).getType() == TokenType.ASSIGN) {
+                    return false;
+                }
+                break;
+            } else if (isTypeOrSpecialToken(tokenType) || tokenType == TokenType.BITWISE_OR) {
+                // Skip type tokens and union separators
+                ahead++;
+            } else {
+                break;
             }
         }
+        
         return false;
     }
     

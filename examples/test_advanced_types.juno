@@ -1,0 +1,18 @@
+// Test advanced type features
+
+int main() {
+    // Test auto type inference
+    auto x = 42;        // should infer int
+    auto name = "John";  // should infer string
+    
+    // Test basic arithmetic
+    int a = 10;
+    int b = 20;
+    int sum = a + b;
+    
+    // Test type conversions
+    long bigNumber = 1000;
+    float pi = 3.14;
+    
+    return 0;
+}

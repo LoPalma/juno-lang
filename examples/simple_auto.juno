@@ -1,0 +1,6 @@
+// Simple auto test
+
+int main() {
+    auto x = 42;
+    return 0;
+}

@@ -1,0 +1,10 @@
+// Test basic type compatibility and literal inference
+
+int main() {
+    // Basic integer assignments - these should work
+    int x = 42;
+    long y = 100;
+    
+    // Test return type compatibility
+    return 0;
+}

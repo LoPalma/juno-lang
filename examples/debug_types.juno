@@ -1,0 +1,6 @@
+// Very simple test case
+
+int main() {
+    int x = 42;
+    return 0;
+}

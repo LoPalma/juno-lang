@@ -558,6 +558,17 @@ public class TypeChecker implements ASTVisitor<Type> {
             return true;
         }
         
+        // Special handling for numeric type coercion
+        if (fromType instanceof PrimitiveType && toType instanceof PrimitiveType) {
+            PrimitiveType fromPrim = (PrimitiveType) fromType;
+            PrimitiveType toPrim = (PrimitiveType) toType;
+            
+            // Allow numeric narrowing conversions for literals
+            if (fromPrim.isNumeric() && toPrim.isNumeric()) {
+                return true; // Allow all numeric conversions for now
+            }
+        }
+        
         // Use built-in compatibility method
         return fromType.isCompatibleWith(toType);
     }
