@@ -1,153 +1,159 @@
 # Juno Programming Language
 
-A modern C-like programming language with advanced type safety, targeting the JVM.
+A modern C-like programming language targeting the JVM, featuring a unique module system and strong static typing.
 
-## Project Overview
+## What is Juno?
 
-This project implements a complete compiler for the Juno programming language that generates JVM bytecode. Juno features strong static typing with smart type inference, C-style syntax, and modern language constructs while leveraging the JVM's runtime capabilities.
+Juno is a compiled programming language that combines C-inspired syntax with JVM compatibility and a distinctive module-based approach to organizing code. Instead of traditional object-oriented programming where data carries methods, Juno separates data from functionality using modules.
 
-## Features
+### Key Philosophy
 
-### Language Features
-- **Strong Static Typing**: Variables must be declared with explicit types
-- **C-like Syntax**: Familiar syntax with braces, semicolons, and C-style operators
-- **Primitive Types**: `int`, `float`, `char`, `string`, `bool`
-- **Control Flow**: `if`/`else`, `while`, `for` loops
-- **Functions**: Function declarations and calls with parameters and return values
-- **Expressions**: Arithmetic, logical, and comparison operators
-- **Comments**: Single-line (`//`) and multi-line (`/* */`) comments
+```c
+// Traditional OOP approach (Python/Java):
+// msg.length() - string carries all its methods
 
-### Compiler Features
-- **Lexical Analysis**: Complete tokenizer for C-like syntax
-- **Parsing**: Recursive descent parser generating AST
-- **Type Checking**: Strong static type checking with error reporting
-- **Code Generation**: JVM bytecode generation using ASM library
-- **Error Handling**: Comprehensive error reporting with line/column information
+// Juno's module approach:
+import Io;
+import String;
 
-## Project Structure
-
-```
-src/
-├── main/java/com/juno/
-│   ├── Main.java                    # Main entry point
-│   ├── lexer/                       # Lexical analysis
-│   │   ├── Lexer.java              # Tokenizer implementation
-│   │   ├── Token.java              # Token representation
-│   │   └── TokenType.java          # Token type enumeration
-│   ├── parser/                      # Syntax analysis
-│   │   └── Parser.java             # Recursive descent parser
-│   ├── ast/                         # Abstract Syntax Tree
-│   │   ├── ASTNode.java            # Base AST node interface
-│   │   ├── ASTVisitor.java         # Visitor pattern interface
-│   │   ├── Program.java            # Root AST node
-│   │   ├── Expression.java         # Expression interface
-│   │   ├── Statement.java          # Statement interface
-│   │   ├── BinaryExpression.java   # Binary expressions
-│   │   └── ASTNodes.java           # Additional AST node stubs
-│   ├── types/                       # Type system
-│   │   ├── Type.java               # Base type interface
-│   │   └── TypeChecker.java        # Type checking logic
-│   └── codegen/                     # Code generation
-│       └── CodeGenerator.java      # JVM bytecode generation
-├── test/java/com/juno/         # Unit tests
-examples/                            # Example programs
-docs/                               # Additional documentation
+void main() {
+    string msg = "Hello, world!";  // Just data, no baggage
+    Io.println(msg);               // Use Io module for output
+    int len = String.length(msg);  // Use String module for operations
+}
 ```
 
-## Building the Project
+This design provides memory efficiency by importing functionality once per module rather than carrying method tables with every data instance.
+
+## Current Status: v1.0.0-alpha
+
+⚠️ **Alpha Software**: Juno is in active development. Some features work reliably, others are still being debugged.
+
+### ✅ Working Features
+- ✅ Lexical analysis and parsing
+- ✅ Basic type system with primitives (`int`, `string`, `bool`, `char`, `float`, etc.)
+- ✅ **Pointers** - Recently fixed and working!
+- ✅ Function declarations and calls
+- ✅ Control flow (`if`/`else`, `while`, `for-in`)
+- ✅ Module system and imports
+- ✅ JVM bytecode generation
+- ✅ String concatenation with `^^` operator
+- ✅ Type casting with `<type>(value)` syntax
+
+### 🔧 Known Issues
+- ⚠️ Arrays are currently broken
+- ⚠️ Type system occasionally "has a stroke"
+- ⚠️ Error messages can be cryptic (sometimes more like abstract art)
+
+## Language Features
+
+### Type System
+Juno supports a rich type system including:
+- **Primitives**: `byte`, `short`, `int`, `long`, `ubyte`, `ushort`, `uint`, `ulong`, `float`, `double`, `char`, `string`, `bool`
+- **Special types**: `void`, `auto`, `any`
+- **Advanced types**: `optional T`, union types with `|`, pointers
+- **Type aliases**: `type MyInt = int;`
+
+### Module System
+```c
+// Import entire module
+import Io;
+import String;
+
+// Use qualified calls
+Io.println("Hello!");
+int length = String.length("test");
+```
+
+### Control Flow
+```c
+// If statements
+if (condition) {
+    // code
+} else {
+    // alternative
+}
+
+// While loops
+while (condition) {
+    // loop body
+}
+
+// For-in loops  
+for (int i in range) {
+    // iterate
+}
+```
+
+### Operators
+- Arithmetic: `+`, `-`, `*`, `/`, `%`
+- Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
+- Logical: `&&`, `||`, `!`
+- **String concatenation**: `^^` (unique to Juno)
+- Assignment: `=`
+
+## Building and Running
 
 ### Prerequisites
-- Java 17 or higher
-- Maven 3.6 or higher
+- Java 17+
+- Maven 3.6+
 
-### Build Commands
+### Quick Start
 ```bash
-# Compile the project
-mvn compile
-
-# Run tests
-mvn test
-
-# Package as JAR
+# Build the compiler
 mvn package
 
-# Clean build artifacts
-mvn clean
+# Compile a Juno program
+./junoc examples/hello.juno
+
+# Run the generated bytecode
+java Hello
 ```
 
-### Running the Compiler
-```bash
-# Using Maven exec plugin
-mvn exec:java -Dexec.args="examples/hello.juno"
+### Project Structure
+```
+src/main/java/com/juno/
+├── Main.java              # Compiler entry point
+├── lexer/                 # Tokenization
+├── ast/                   # Abstract Syntax Tree nodes
+├── types/                 # Type system implementation  
+├── parser/                # Syntax analysis (in ast/)
+├── error/                 # Error reporting
+├── stdlib/                # Standard library modules
+└── runtime/               # Runtime support
 
-# Using the packaged JAR
-java -jar target/juno-1.0.0-SNAPSHOT.jar examples/hello.juno
+examples/                  # Example Juno programs
+tests/                     # Test cases
+lib/                      # ASM bytecode generation library
 ```
 
-## Language Specification
+## Example Programs
 
-### Grammar (EBNF-style)
-
-```
-program        = statement* EOF
-statement      = varDecl | funDecl | ifStmt | whileStmt | returnStmt | block | exprStmt
-varDecl        = type IDENTIFIER ( "=" expression )? ";"
-funDecl        = type IDENTIFIER "(" parameters? ")" block
-ifStmt         = "if" "(" expression ")" statement ( "else" statement )?
-whileStmt      = "while" "(" expression ")" statement
-returnStmt     = "return" expression? ";"
-block          = "{" statement* "}"
-exprStmt       = expression ";"
-
-expression     = assignment
-assignment     = logicOr ( "=" assignment )?
-logicOr        = logicAnd ( "||" logicAnd )*
-logicAnd       = equality ( "&&" equality )*
-equality       = comparison ( ( "==" | "!=" ) comparison )*
-comparison     = term ( ( "<" | "<=" | ">" | ">=" ) term )*
-term           = factor ( ( "+" | "-" ) factor )*
-factor         = unary ( ( "*" | "/" | "%" ) unary )*
-unary          = ( "!" | "-" ) unary | call
-call           = primary ( "(" arguments? ")" )*
-primary        = literal | IDENTIFIER | "(" expression ")"
-
-type           = "int" | "float" | "char" | "string" | "bool" | "void"
-literal        = INTEGER | FLOAT | STRING | CHAR | "true" | "false"
-```
-
-### Example Programs
-
-#### Hello World
+### Hello World
 ```c
-// hello.juno
-int main() {
-    string message = "Hello, World!";
-    print(message);
-    return 0;
+void main() {
+    import Io;
+    Io.println("Hello, world!");
 }
 ```
 
-#### Factorial Function
+### Using Multiple Modules
 ```c
-// factorial.juno
-int factorial(int n) {
-    if (n <= 1) {
-        return 1;
-    } else {
-        return n * factorial(n - 1);
-    }
-}
-
-int main() {
-    int result = factorial(5);
-    print(result);
-    return 0;
+void main() {
+    import Io;
+    import String;
+    
+    string message = "Juno";
+    string greeting = "Hello, " ^^ message ^^ "!";
+    int len = String.length(greeting);
+    
+    Io.println(greeting);
+    Io.println("Length: " ^^ len);
 }
 ```
 
-#### Fibonacci Sequence
+### Functions and Control Flow
 ```c
-// fibonacci.juno
 int fibonacci(int n) {
     if (n <= 1) {
         return n;
@@ -155,77 +161,57 @@ int fibonacci(int n) {
     return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
-int main() {
+void main() {
+    import Io;
+    
     for (int i = 0; i < 10; i = i + 1) {
-        int fib = fibonacci(i);
-        print(fib);
+        int result = fibonacci(i);
+        Io.println("fib(" ^^ i ^^ ") = " ^^ result);
     }
-    return 0;
 }
 ```
 
-## Development Status
+## Development Notes
 
-This is a foundational implementation with the following status:
+Juno is being developed by a 17-year-old self-taught programmer who started coding at 6 and learned C as their first "real" language. The entire compiler infrastructure - from lexer to bytecode generation - has been built from scratch without formal CS education, requiring "reinventing" fundamental concepts like linked lists, trees, and hash maps along the way.
 
-### ✅ Completed
-- [x] Project structure and build system
-- [x] Complete lexical analyzer with all C-like tokens
-- [x] AST node hierarchy with visitor pattern
-- [x] Basic framework for parser, type checker, and code generator
+### Why Juno?
 
-### 🔄 In Progress / TODO
-- [ ] Complete parser implementation for all language constructs
-- [ ] Implement comprehensive type system with all primitive types
-- [ ] Build type checker with proper error reporting
-- [ ] Implement JVM bytecode generation using ASM
-- [ ] Add support for arrays and structures
-- [ ] Implement standard library functions
-- [ ] Add comprehensive error handling and reporting
-- [ ] Create extensive test suite
-- [ ] Add IDE integration and debugging support
+After mastering C and understanding it as "fancy assembly," the goal was to create a language that fits perfectly for the developer's needs: C's familiar syntax with JVM compatibility and a cleaner approach to organizing code than traditional OOP.
 
-## Technical Architecture
+### Current Priorities
+1. Fix array implementation
+2. Stabilize type system edge cases  
+3. Improve error message clarity
+4. Expand standard library modules
+5. Add comprehensive documentation
 
-### Compilation Pipeline
-1. **Lexical Analysis**: Source code → Tokens
-2. **Parsing**: Tokens → Abstract Syntax Tree (AST)
-3. **Type Checking**: AST → Type-annotated AST
-4. **Code Generation**: AST → JVM Bytecode (.class files)
+## Technical Details
 
-### Design Patterns
-- **Visitor Pattern**: Used for AST traversal (type checking, code generation)
-- **Builder Pattern**: Used in parser for constructing AST nodes
-- **Strategy Pattern**: Planned for different optimization strategies
-
-### Dependencies
-- **ASM Library**: For JVM bytecode generation and manipulation
-- **JUnit 5**: For unit testing
-- **AssertJ**: For fluent assertions in tests
+- **Target**: JVM bytecode (Java 17+)
+- **Parsing**: Recursive descent parser
+- **Code Generation**: ASM library for bytecode emission
+- **Type System**: Static typing with inference
+- **Memory Model**: JVM garbage collection
+- **Interop**: Full access to Java libraries
 
 ## Contributing
 
-This project is in early development. Key areas for contribution:
+This is an alpha release primarily for feedback and experimentation. The codebase is well-structured and documented, making it approachable for contributions.
 
-1. **Parser Implementation**: Complete the recursive descent parser
-2. **Type System**: Implement comprehensive type checking
-3. **Code Generation**: Complete JVM bytecode generation
-4. **Standard Library**: Add built-in functions and types
-5. **Testing**: Expand test coverage
-6. **Documentation**: Improve language specification and examples
-
-## Development Credit
-
-This programming language and compiler infrastructure is designed and architected by the project owner. 
-While AI assistance (Claude) was utilized to accelerate implementation of certain components, all design decisions, language specifications, architectural choices, and creative direction originate from the project owner. 
-The language concept, syntax design, type system, module system, and overall vision are entirely the work of the human developer.
+**Areas needing help:**
+- Array implementation debugging
+- Type system edge case fixes
+- Standard library module expansion
+- Error message improvements
+- Test coverage expansion
 
 ## License
 
-This project is open source. See LICENSE file for details.
+BSD-3-Clause - See LICENSE file for details.
 
-## References
+This ensures proper attribution while allowing forks and modifications, with the requirement that the original author (Palma) is credited and cannot be used for unauthorized endorsements.
 
-- [ASM Documentation](https://asm.ow2.io/)
-- [JVM Specification](https://docs.oracle.com/javase/specs/jvms/se17/html/)
-- [Crafting Interpreters](https://craftinginterpreters.com/) - Excellent resource for language implementation
+---
+
+*Built with passion for language design and the belief that every programmer should have tools that fit their thinking perfectly.*
