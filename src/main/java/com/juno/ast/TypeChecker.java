@@ -151,7 +151,7 @@ public class TypeChecker implements ASTVisitor<Type> {
             }
             // Handle regular type compatibility
             else {
-                if (!isCompatible(initType, declaredType)) {
+                if (!isAssignmentCompatible(initType, declaredType)) {
                     errorCollector.addError(new CompilerError(
                         "Cannot assign " + initType + " to variable '" + varName + "' of type " + declaredType,
                         ErrorCode.TYPE_MISMATCH,

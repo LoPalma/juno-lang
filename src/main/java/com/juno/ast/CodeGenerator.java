@@ -711,12 +711,21 @@ public class CodeGenerator implements ASTVisitor<Void> {
         // Generate value
         expr.getValue().accept(this);
         
+        // Get the target variable's type for type conversion
+        com.juno.types.Type targetVarType = target.getType();
+        com.juno.types.Type valueType = expr.getValue().getType();
+        
+        // Add type conversion if needed between value and target variable
+        if (valueType != null && targetVarType != null && !valueType.equals(targetVarType)) {
+            jasminComment("Convert " + valueType.getName() + " to " + targetVarType.getName() + " for assignment");
+            generateTypeConversion(valueType, targetVarType);
+        }
+        
         // Duplicate value on stack (assignment returns the assigned value)
         methodGenerator.visitInsn(DUP);
         
-        // Store in variable
-        com.juno.types.Type varType = expr.getType();
-        storeVariable(varType, slot);
+        // Store in variable using target variable's type
+        storeVariable(targetVarType, slot);
         
         return null;
     }

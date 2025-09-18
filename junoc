@@ -1,6 +1,6 @@
 #!/bin/bash
 # Juno Compiler (junoc) - Fast executable wrapper
-# Usage: junoc [-j] <source-file.cl|.juno>
+# Usage: junoc [-j] <source-file.jl|.juno>
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JAR_FILE="$SCRIPT_DIR/junoc-standalone.jar"
@@ -32,7 +32,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -j, --jasmin    Generate Jasmin assembly (.j) files"
             echo "  -h, --help      Show this help message"
             echo ""
-            echo "Supported file extensions: .cl, .juno"
+            echo "Supported file extensions: .jl, .juno"
             exit 0
             ;;
         -*)

@@ -1,5 +1,5 @@
 import Io;
 
-void main(string[] args) {
+void main() {
 	Io.println("Hello, world!");
 }
