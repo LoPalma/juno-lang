@@ -1,0 +1,6 @@
+import Io;
+
+void main() {
+    int n = 3;
+    Io.println("Hello, for the " ^^ string<n> ^^ "th time!");
+}

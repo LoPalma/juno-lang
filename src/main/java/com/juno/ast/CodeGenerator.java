@@ -4,6 +4,7 @@ package com.juno.ast;
 // Don't import com.juno.types.* to avoid conflicts - import specific classes instead
 import com.juno.types.PrimitiveType;
 import com.juno.types.ArrayType;
+import com.juno.types.UnionType;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
@@ -172,9 +173,9 @@ public class CodeGenerator implements ASTVisitor<Void> {
         String methodName = funcDecl.getName();
         String methodDescriptor = buildMethodDescriptor(funcDecl);
         
-        // Track if we have a main method (int or long return)
+        // Track if we have a main method (int, long, or void return)
         if (methodName.equals("main") && 
-            (methodDescriptor.equals("()I") || methodDescriptor.equals("()J"))) {
+            (methodDescriptor.equals("()I") || methodDescriptor.equals("()J") || methodDescriptor.equals("()V"))) {
             hasJunoMainMethod = true;
             junoMainReturnType = funcDecl.getReturnType();
         }
@@ -955,6 +956,9 @@ public class CodeGenerator implements ASTVisitor<Void> {
             }
         } else if (type instanceof ArrayType) {
             return type.getJVMDescriptor();
+        } else if (type instanceof UnionType) {
+            // Union types are represented as tagged unions using Object
+            return "Ljava/lang/Object;";
         } else {
             // For now, treat complex types as Object
             return "Ljava/lang/Object;";
@@ -1007,6 +1011,10 @@ public class CodeGenerator implements ASTVisitor<Void> {
                     methodGenerator.visitVarInsn(ILOAD, slot);
                     jasminInstruction("iload " + slot);
             }
+        } else if (type instanceof UnionType) {
+            // Union types are stored as Object references
+            methodGenerator.visitVarInsn(ALOAD, slot);
+            jasminInstruction("aload " + slot + " ; union type");
         } else {
             methodGenerator.visitVarInsn(ALOAD, slot);  // Object reference
             jasminInstruction("aload " + slot);
@@ -1047,6 +1055,10 @@ public class CodeGenerator implements ASTVisitor<Void> {
                     methodGenerator.visitVarInsn(ISTORE, slot);
                     jasminInstruction("istore " + slot);
             }
+        } else if (type instanceof UnionType) {
+            // Union types are stored as Object references
+            methodGenerator.visitVarInsn(ASTORE, slot);
+            jasminInstruction("astore " + slot + " ; union type");
         } else {
             methodGenerator.visitVarInsn(ASTORE, slot);  // Object reference
             jasminInstruction("astore " + slot);
@@ -1075,6 +1087,9 @@ public class CodeGenerator implements ASTVisitor<Void> {
                 default:
                     methodGenerator.visitInsn(ICONST_0);
             }
+        } else if (type instanceof UnionType) {
+            // Union types default to null
+            methodGenerator.visitInsn(ACONST_NULL);
         } else {
             methodGenerator.visitInsn(ACONST_NULL);
         }
@@ -1308,8 +1323,16 @@ public class CodeGenerator implements ASTVisitor<Void> {
             return; // No conversion needed
         }
         
+        // Handle conversions TO union types (boxing)
+        if (toType instanceof UnionType) {
+            generatePrimitiveToUnionConversion(fromType, (UnionType) toType);
+        }
+        // Handle primitive to string conversions
+        else if (fromType instanceof PrimitiveType && "string".equals(toTypeName)) {
+            generatePrimitiveToStringConversion(fromTypeName);
+        }
         // Handle primitive type conversions
-        if (fromType instanceof PrimitiveType && toType instanceof PrimitiveType) {
+        else if (fromType instanceof PrimitiveType && toType instanceof PrimitiveType) {
             generatePrimitiveTypeConversion(fromTypeName, toTypeName);
         } else {
             // For non-primitive types, assume no conversion is needed for now
@@ -1479,6 +1502,91 @@ public class CodeGenerator implements ASTVisitor<Void> {
             methodGenerator.visitInsn(D2F);
             jasminInstruction("d2f ; double to float");
         }
+    }
+    
+    /**
+     * Generate conversion from primitive types to union types.
+     * For now, this is a simple boxing operation - we just wrap the primitive in an Object.
+     * In a full implementation, this would create a tagged union object.
+     */
+    private void generatePrimitiveToUnionConversion(com.juno.types.Type fromType, UnionType toType) {
+        // For now, we use primitive boxing to convert to Object
+        // This is a simplified approach - a full union type would need runtime type tags
+        
+        if (fromType instanceof PrimitiveType) {
+            String fromTypeName = fromType.getName();
+            
+            // Box primitives to their wrapper types
+            switch (fromTypeName) {
+                case "int": case "uint":
+                    methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+                    jasminInstruction("invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer; ; box int to union");
+                    break;
+                case "long": case "ulong":
+                    methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false);
+                    jasminInstruction("invokestatic java/lang/Long/valueOf(J)Ljava/lang/Long; ; box long to union");
+                    break;
+                case "float":
+                    methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
+                    jasminInstruction("invokestatic java/lang/Float/valueOf(F)Ljava/lang/Float; ; box float to union");
+                    break;
+                case "double":
+                    methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
+                    jasminInstruction("invokestatic java/lang/Double/valueOf(D)Ljava/lang/Double; ; box double to union");
+                    break;
+                case "bool":
+                    methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
+                    jasminInstruction("invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean; ; box bool to union");
+                    break;
+                case "char":
+                    methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;", false);
+                    jasminInstruction("invokestatic java/lang/Character/valueOf(C)Ljava/lang/Character; ; box char to union");
+                    break;
+                case "byte": case "ubyte": case "short": case "ushort":
+                    // These are stored as int on JVM, so box as Integer
+                    methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+                    jasminInstruction("invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer; ; box " + fromTypeName + " to union");
+                    break;
+                case "string":
+                    // String is already an Object, no boxing needed
+                    jasminComment("String already Object for union type");
+                    break;
+                default:
+                    jasminComment("Unknown primitive type for union conversion: " + fromTypeName);
+                    break;
+            }
+        } else {
+            // Non-primitive types are already Objects
+            jasminComment("Non-primitive type already Object for union");
+        }
+    }
+    
+    /**
+     * Generate conversion from primitive types to string using String.valueOf().
+     * Assumes the primitive value is already on the stack.
+     */
+    private void generatePrimitiveToStringConversion(String fromTypeName) {
+        // Use appropriate String.valueOf method based on the primitive type
+        String descriptor;
+        
+        if ("long".equals(fromTypeName) || "ulong".equals(fromTypeName)) {
+            descriptor = "(J)Ljava/lang/String;";
+        } else if ("float".equals(fromTypeName)) {
+            descriptor = "(F)Ljava/lang/String;";
+        } else if ("double".equals(fromTypeName)) {
+            descriptor = "(D)Ljava/lang/String;";
+        } else if ("bool".equals(fromTypeName)) {
+            descriptor = "(Z)Ljava/lang/String;";
+        } else if ("char".equals(fromTypeName)) {
+            descriptor = "(C)Ljava/lang/String;";
+        } else {
+            // For int-sized types (int, uint, short, ushort, byte, ubyte)
+            // All are represented as int on JVM stack
+            descriptor = "(I)Ljava/lang/String;";
+        }
+        
+        methodGenerator.visitMethodInsn(INVOKESTATIC, "java/lang/String", "valueOf", descriptor, false);
+        jasminInstruction("invokestatic java/lang/String/valueOf" + descriptor + " ; " + fromTypeName + " to string");
     }
     
     private boolean isIntegerTypeName(String typeName) {
@@ -1684,34 +1792,47 @@ public class CodeGenerator implements ASTVisitor<Void> {
         
         methodGenerator.visitCode();
         
-        // Determine if Juno main returns int or long
+        // Determine the return type of Juno main
+        boolean isVoidMain = junoMainReturnType != null && junoMainReturnType.getName().equals("void");
         boolean isLongMain = junoMainReturnType != null && isLongType(junoMainReturnType);
-        String callDescriptor = isLongMain ? "()J" : "()I";
-        String printDescriptor = isLongMain ? "(J)V" : "(I)V";
         
-        // Call our Juno main() method and get the result
+        String callDescriptor;
+        if (isVoidMain) {
+            callDescriptor = "()V";
+        } else if (isLongMain) {
+            callDescriptor = "()J";
+        } else {
+            callDescriptor = "()I";
+        }
+        
+        // Call our Juno main() method
         methodGenerator.visitMethodInsn(INVOKESTATIC, currentClassName, "main", callDescriptor, false);
         jasminInstruction("invokestatic " + currentClassName + "/main" + callDescriptor);
         
-        // Print the result to stdout (standard JVM behavior)
-        methodGenerator.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        jasminInstruction("getstatic java/lang/System/out Ljava/io/PrintStream;");
-        
-        if (isLongMain) {
-            // For long values: stack is [long_low, long_high, PrintStream]
-            // We need: [PrintStream, long_low, long_high]
-            // Use DUP_X2 then POP to reorder
-            methodGenerator.visitInsn(DUP_X2);  // [PrintStream, long_low, long_high, PrintStream]
-            methodGenerator.visitInsn(POP);     // [PrintStream, long_low, long_high]
-            jasminInstruction("dup_x2");
-            jasminInstruction("pop");
-        } else {
-            methodGenerator.visitInsn(SWAP);  // Put int result before PrintStream
-            jasminInstruction("swap");
+        // If main returns a value, print it to stdout (standard JVM behavior)
+        if (!isVoidMain) {
+            String printDescriptor = isLongMain ? "(J)V" : "(I)V";
+            
+            // Get System.out for printing
+            methodGenerator.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+            jasminInstruction("getstatic java/lang/System/out Ljava/io/PrintStream;");
+            
+            if (isLongMain) {
+                // For long values: stack is [long_low, long_high, PrintStream]
+                // We need: [PrintStream, long_low, long_high]
+                // Use DUP_X2 then POP to reorder
+                methodGenerator.visitInsn(DUP_X2);  // [PrintStream, long_low, long_high, PrintStream]
+                methodGenerator.visitInsn(POP);     // [PrintStream, long_low, long_high]
+                jasminInstruction("dup_x2");
+                jasminInstruction("pop");
+            } else {
+                methodGenerator.visitInsn(SWAP);  // Put int result before PrintStream
+                jasminInstruction("swap");
+            }
+            
+            methodGenerator.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", printDescriptor, false);
+            jasminInstruction("invokevirtual java/io/PrintStream/println" + printDescriptor);
         }
-        
-        methodGenerator.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", printDescriptor, false);
-        jasminInstruction("invokevirtual java/io/PrintStream/println" + printDescriptor);
         
         // Return void (standard JVM main behavior)
         methodGenerator.visitInsn(RETURN);

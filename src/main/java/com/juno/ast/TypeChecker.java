@@ -996,11 +996,15 @@ public class TypeChecker implements ASTVisitor<Type> {
             return true; // bool can be cast to char (0 or 1)
         }
         
-        // String conversions are generally not allowed without explicit parsing
-        // (This maintains type safety - strings need explicit parsing methods)
-        if ("string".equals(fromTypeName) || "string".equals(toTypeName)) {
-            // String to string is handled above (same type)
-            // All other string conversions are invalid
+        // String conversions
+        if ("string".equals(toTypeName)) {
+            // Allow all primitive types to be cast to string (toString conversion)
+            return true;
+        }
+        
+        if ("string".equals(fromTypeName)) {
+            // String to other types requires explicit parsing (generally not allowed as cast)
+            // This maintains type safety - strings need explicit parsing methods
             return false;
         }
         

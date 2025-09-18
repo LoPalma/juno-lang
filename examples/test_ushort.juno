@@ -1,0 +1,6 @@
+import Io;
+
+void main() {
+    ushort x = 5;
+    Io.println("x = 5");
+}

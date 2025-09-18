@@ -37,7 +37,7 @@ public class Lexer {
         KEYWORDS.put("public", TokenType.PUBLIC);
         KEYWORDS.put("import", TokenType.IMPORT);
         KEYWORDS.put("module", TokenType.MODULE);
-        KEYWORDS.put("optional", TokenType.OPTIONAL);
+        KEYWORDS.put("opt", TokenType.OPTIONAL);
         KEYWORDS.put("auto", TokenType.AUTO);
         KEYWORDS.put("any", TokenType.ANY);
         KEYWORDS.put("type", TokenType.TYPE);
@@ -323,7 +323,7 @@ public class Lexer {
         advance(); // consume closing quote
         
         // Validate character literal length
-        if (content.length() == 0) {
+        if (content.isEmpty()) {
             throw ErrorReporter.lexError(ErrorCode.BAD_SYNTAX, sourceFile, sourceLines, 
                                         startLine, startColumn, "empty character literal", 
                                         startColumn, current - start);

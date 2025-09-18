@@ -529,7 +529,9 @@ public class Parser {
         Type targetType = getTypeFromToken(typeToken);
         
         consume(TokenType.LESS_THAN, "Expected '<' after type in cast expression.");
-        Expression expression = parseExpression();
+        // Use parseShift() to avoid conflicts with string concatenation (^^)
+        // This allows most expressions but stops before concatenation precedence
+        Expression expression = parseShift();
         consume(TokenType.GREATER_THAN, "Expected '>' after cast expression.");
         
         return new CastExpression(targetType, expression, typeToken.getLine(), typeToken.getColumn());

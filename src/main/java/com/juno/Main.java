@@ -110,7 +110,7 @@ public class Main {
         
         try {
             CodeGenerator codeGen = new CodeGenerator();
-            String outputClass = sourceFile.replace(".juno", "").replace(".cl", "");
+            String outputClass = sourceFile.replace(".juno", "").replace(".jl", "");
             codeGen.generate(program, outputClass, generateJasmin);
         } catch (Exception e) {
             System.err.println("Code generation failed: " + e.getMessage());
