@@ -173,7 +173,7 @@ void main() {
 
 ## Development Notes
 
-Juno is being developed by a 17-year-old self-taught programmer who started coding at 6 and learned C as their first "real" language. The entire compiler infrastructure - from lexer to bytecode generation - has been built from scratch without formal CS education, requiring "reinventing" fundamental concepts like linked lists, trees, and hash maps along the way.
+Juno is being developed by a 17-year-old self-taught programmer. This results in the code having some... unexpected quirks, let's say.
 
 ### Why Juno?
 
