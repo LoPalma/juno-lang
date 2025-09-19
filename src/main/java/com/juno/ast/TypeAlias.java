@@ -33,12 +33,12 @@ public class TypeAlias implements Statement {
     }
     
     @Override
-    public int getLine() {
+    public int line() {
         return line;
     }
     
     @Override
-    public int getColumn() {
+    public int column() {
         return column;
     }
     

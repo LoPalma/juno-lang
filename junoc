@@ -16,19 +16,25 @@ done
 
 # Parse command line arguments
 GENERATE_JASMIN=false
+KEEP_CLASS=true  # Changed: default to keeping class files
 SOURCE_FILE=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -n|--no-class)  # Changed: flag to NOT generate class files
+            KEEP_CLASS=false
+            shift
+            ;;
         -j|--jasmin)
             GENERATE_JASMIN=true
             shift
             ;;
         -h|--help)
             echo "Juno Compiler (junoc)"
-            echo "Usage: junoc [-j] <source-file>"
+            echo "Usage: junoc [-j] [-c] <source-file>"
             echo ""
             echo "Options:"
+            echo "  -c, --class     Generate JVM ByteCode (.class) files"
             echo "  -j, --jasmin    Generate Jasmin assembly (.j) files"
             echo "  -h, --help      Show this help message"
             echo ""
@@ -67,5 +73,15 @@ if [[ "$GENERATE_JASMIN" == true ]]; then
     export JUNO_GENERATE_JASMIN=true
 fi
 
+
+SOURCE_BASE=$(basename "$SOURCE_FILE" .juno)
+SOURCE_BASE=$(basename "$SOURCE_BASE" .jl)
+EXPECTED_CLASS="${SOURCE_BASE}.class"
+
 # Execute the compiler
 exec java -cp "$CLASSPATH" com.juno.Main "$SOURCE_FILE"
+
+# Clean up only our generated file
+if [[ "$KEEP_CLASS" == false ]] && [[ -f "$EXPECTED_CLASS" ]]; then
+    rm -f "$EXPECTED_CLASS"
+fi

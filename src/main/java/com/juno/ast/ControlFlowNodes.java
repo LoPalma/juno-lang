@@ -21,10 +21,10 @@ class BreakStatement implements Statement {
     }
     
     @Override
-    public int getLine() { return line; }
+    public int line() { return line; }
     
     @Override
-    public int getColumn() { return column; }
+    public int column() { return column; }
 }
 
 /**
@@ -44,8 +44,8 @@ class ContinueStatement implements Statement {
     }
     
     @Override
-    public int getLine() { return line; }
+    public int line() { return line; }
     
     @Override
-    public int getColumn() { return column; }
+    public int column() { return column; }
 }

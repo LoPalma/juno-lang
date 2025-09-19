@@ -16,11 +16,11 @@ public interface ASTNode {
      * Get the line number where this node appears in source code.
      * @return line number
      */
-    int getLine();
+    int line();
     
     /**
      * Get the column number where this node appears in source code.
      * @return column number
      */
-    int getColumn();
+    int column();
 }

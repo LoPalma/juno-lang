@@ -1,0 +1,6 @@
+import Io;
+
+void main() {
+	opt string msg = "hello";
+	Io.println(msg);
+}

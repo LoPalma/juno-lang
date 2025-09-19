@@ -19,8 +19,8 @@ public class ASTTest {
         
         assertThat(program).isNotNull();
         assertThat(program.getStatements()).isEmpty();
-        assertThat(program.getLine()).isEqualTo(1);
-        assertThat(program.getColumn()).isEqualTo(1);
+        assertThat(program.line()).isEqualTo(1);
+        assertThat(program.column()).isEqualTo(1);
     }
 
     @Test
@@ -36,8 +36,8 @@ public class ASTTest {
         assertThat(binaryExpr.getLeft()).isEqualTo(left);
         assertThat(binaryExpr.getOperator()).isEqualTo("+");
         assertThat(binaryExpr.getRight()).isEqualTo(right);
-        assertThat(binaryExpr.getLine()).isEqualTo(1);
-        assertThat(binaryExpr.getColumn()).isEqualTo(3);
+        assertThat(binaryExpr.line()).isEqualTo(1);
+        assertThat(binaryExpr.column()).isEqualTo(3);
     }
 
     @Test
@@ -72,10 +72,10 @@ public class ASTTest {
         Program program = new Program(Collections.emptyList(), 10, 5);
         Expression mockExpr = new MockExpression(20, 15);
         
-        assertThat(program.getLine()).isEqualTo(10);
-        assertThat(program.getColumn()).isEqualTo(5);
-        assertThat(mockExpr.getLine()).isEqualTo(20);
-        assertThat(mockExpr.getColumn()).isEqualTo(15);
+        assertThat(program.line()).isEqualTo(10);
+        assertThat(program.column()).isEqualTo(5);
+        assertThat(mockExpr.line()).isEqualTo(20);
+        assertThat(mockExpr.column()).isEqualTo(15);
     }
 
     // Test implementations for testing purposes
@@ -103,12 +103,12 @@ public class ASTTest {
         }
 
         @Override
-        public int getLine() {
+        public int line() {
             return line;
         }
 
         @Override
-        public int getColumn() {
+        public int column() {
             return column;
         }
 
@@ -319,12 +319,12 @@ public class ASTTest {
         }
 
         @Override
-        public int getLine() {
+        public int line() {
             return line;
         }
 
         @Override
-        public int getColumn() {
+        public int column() {
             return column;
         }
     }

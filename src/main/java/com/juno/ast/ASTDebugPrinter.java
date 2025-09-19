@@ -171,7 +171,7 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
     
     @Override
     public String visitExpressionStatement(ExpressionStatement stmt) {
-        return "ExprStmt { " + stmt.getExpression().accept(this) + " }";
+        return "ExprStmt { " + stmt.expression().accept(this) + " }";
     }
     
     @Override
@@ -183,10 +183,10 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
         
         indentLevel++;
         sb.append(indent()).append("type: ").append(stmt.getDeclaredType()).append("\n");
-        sb.append(indent()).append("name: \"").append(stmt.getName()).append("\"");
+        sb.append(indent()).append("name: \"").append(stmt.name()).append("\"");
         
-        if (stmt.getInitializer() != null) {
-            sb.append("\n").append(indent()).append("init: ").append(stmt.getInitializer().accept(this));
+        if (stmt.initializer() != null) {
+            sb.append("\n").append(indent()).append("init: ").append(stmt.initializer().accept(this));
         }
         
         indentLevel--;
@@ -202,22 +202,22 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
         sb.append(" {\n");
         
         indentLevel++;
-        sb.append(indent()).append("return: ").append(stmt.getReturnType()).append("\n");
-        sb.append(indent()).append("name: \"").append(stmt.getName()).append("\"\n");
+        sb.append(indent()).append("return: ").append(stmt.returnType()).append("\n");
+        sb.append(indent()).append("name: \"").append(stmt.name()).append("\"\n");
         sb.append(indent()).append("params: [");
         
-        if (!stmt.getParameters().isEmpty()) {
+        if (!stmt.parameters().isEmpty()) {
             sb.append("\n");
             indentLevel++;
-            for (FunctionDeclaration.Parameter param : stmt.getParameters()) {
-                sb.append(indent()).append(param.type).append(" ").append(param.name).append("\n");
+            for (FunctionDeclaration.Parameter param : stmt.parameters()) {
+                sb.append(indent()).append(param.type()).append(" ").append(param.name()).append("\n");
             }
             indentLevel--;
             sb.append(indent());
         }
         sb.append("]\n");
         
-        sb.append(indent()).append("body: ").append(stmt.getBody().accept(this));
+        sb.append(indent()).append("body: ").append(stmt.body().accept(this));
         
         indentLevel--;
         sb.append("\n").append(indent()).append("}");
@@ -230,7 +230,7 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
         sb.append("If {\n");
         
         indentLevel++;
-        sb.append(indent()).append("condition: ").append(stmt.getCondition().accept(this)).append("\n");
+        sb.append(indent()).append("condition: ").append(stmt.condition().accept(this)).append("\n");
         sb.append(indent()).append("then: ").append(stmt.getThenStatement().accept(this));
         
         if (stmt.getElseStatement() != null) {
@@ -248,8 +248,8 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
         sb.append("While {\n");
         
         indentLevel++;
-        sb.append(indent()).append("condition: ").append(stmt.getCondition().accept(this)).append("\n");
-        sb.append(indent()).append("body: ").append(stmt.getBody().accept(this));
+        sb.append(indent()).append("condition: ").append(stmt.condition().accept(this)).append("\n");
+        sb.append(indent()).append("body: ").append(stmt.body().accept(this));
         indentLevel--;
         
         sb.append("\n").append(indent()).append("}");
@@ -262,14 +262,14 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
         sb.append("ForIn {\n");
         
         indentLevel++;
-        sb.append(indent()).append("variable: ").append(stmt.getVariableType()).append(" ").append(stmt.getVariableName());
+        sb.append(indent()).append("variable: ").append(stmt.variableType()).append(" ").append(stmt.variableName());
         
-        if (stmt.getInitializer() != null) {
-            sb.append(" = ").append(stmt.getInitializer().accept(this));
+        if (stmt.initializer() != null) {
+            sb.append(" = ").append(stmt.initializer().accept(this));
         }
         
-        sb.append("\n").append(indent()).append("iterable: ").append(stmt.getIterable().accept(this));
-        sb.append("\n").append(indent()).append("body: ").append(stmt.getBody().accept(this));
+        sb.append("\n").append(indent()).append("iterable: ").append(stmt.iterable().accept(this));
+        sb.append("\n").append(indent()).append("body: ").append(stmt.body().accept(this));
         indentLevel--;
         
         sb.append("\n").append(indent()).append("}");
@@ -278,10 +278,10 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
     
     @Override
     public String visitReturnStatement(ReturnStatement stmt) {
-        if (stmt.getValue() == null) {
+        if (stmt.value() == null) {
             return "Return { }";
         }
-        return "Return { " + stmt.getValue().accept(this) + " }";
+        return "Return { " + stmt.value().accept(this) + " }";
     }
     
     @Override
@@ -290,7 +290,7 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
         sb.append("Block {\n");
         
         indentLevel++;
-        for (Statement s : stmt.getStatements()) {
+        for (Statement s : stmt.statements()) {
             sb.append(indent()).append(s.accept(this)).append("\n");
         }
         indentLevel--;

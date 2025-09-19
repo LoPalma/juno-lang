@@ -170,18 +170,18 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     @Override
     public Void visitFunctionDeclaration(FunctionDeclaration funcDecl) {
-        String methodName = funcDecl.getName();
+        String methodName = funcDecl.name();
         String methodDescriptor = buildMethodDescriptor(funcDecl);
         
         // Track if we have a main method (int, long, or void return)
         if (methodName.equals("main") && 
             (methodDescriptor.equals("()I") || methodDescriptor.equals("()J") || methodDescriptor.equals("()V"))) {
             hasJunoMainMethod = true;
-            junoMainReturnType = funcDecl.getReturnType();
+            junoMainReturnType = funcDecl.returnType();
         }
         
         // Track current function's return type
-        currentFunctionReturnType = funcDecl.getReturnType();
+        currentFunctionReturnType = funcDecl.returnType();
         
         // Generate Jasmin method header
         jasminComment("Function: " + methodName + methodDescriptor);
@@ -207,20 +207,20 @@ public class CodeGenerator implements ASTVisitor<Void> {
         nextLocalSlot = 0; // Static methods don't have 'this'
         
         // Assign slots to parameters
-        for (FunctionDeclaration.Parameter param : funcDecl.getParameters()) {
-            localVariables.put(param.name, nextLocalSlot);
-            nextLocalSlot += getTypeSize(param.type);
+        for (FunctionDeclaration.Parameter param : funcDecl.parameters()) {
+            localVariables.put(param.name(), nextLocalSlot);
+            nextLocalSlot += getTypeSize(param.type());
         }
         
         methodGenerator.visitCode();
         
         // Generate function body
-        if (funcDecl.getBody() != null) {
-            funcDecl.getBody().accept(this);
+        if (funcDecl.body() != null) {
+            funcDecl.body().accept(this);
         }
         
         // For void methods, add return if missing
-        com.juno.types.Type returnType = funcDecl.getReturnType();
+        com.juno.types.Type returnType = funcDecl.returnType();
         if (returnType.getName().equals("void")) {
             methodGenerator.visitInsn(RETURN);
             jasminInstruction("return");
@@ -238,7 +238,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     @Override
     public Void visitVariableDeclaration(VariableDeclaration varDecl) {
-        String varName = varDecl.getName();
+        String varName = varDecl.name();
         com.juno.types.Type varType = varDecl.getDeclaredType();
         
         if (methodGenerator == null) {
@@ -247,8 +247,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
             
             // Track global variable and its initializer
             globalVariables.put(varName, varType);
-            if (varDecl.getInitializer() != null) {
-                globalInitializers.put(varName, varDecl.getInitializer());
+            if (varDecl.initializer() != null) {
+                globalInitializers.put(varName, varDecl.initializer());
             }
             
             // Create the static field
@@ -274,11 +274,11 @@ public class CodeGenerator implements ASTVisitor<Void> {
             nextLocalSlot += getTypeSize(varType);
             
             // Generate initialization code
-            if (varDecl.getInitializer() != null) {
-                varDecl.getInitializer().accept(this);  // Generate value on stack
+            if (varDecl.initializer() != null) {
+                varDecl.initializer().accept(this);  // Generate value on stack
                 
                 // Add type conversion if needed between initializer and variable type
-                com.juno.types.Type initializerType = varDecl.getInitializer().getType();
+                com.juno.types.Type initializerType = varDecl.initializer().getType();
                 if (initializerType != null && !initializerType.equals(varType)) {
                     jasminComment("Convert " + initializerType.getName() + " to " + varType.getName());
                     generateTypeConversion(initializerType, varType);
@@ -299,7 +299,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
     @Override
     public Void visitBreakStatement(BreakStatement stmt) {
         if (breakLabels.isEmpty()) {
-            throw new RuntimeException("break statement not inside loop at line " + stmt.getLine());
+            throw new RuntimeException("break statement not inside loop at line " + stmt.line());
         }
         
         jasminComment("Break statement");
@@ -313,7 +313,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
     @Override
     public Void visitContinueStatement(ContinueStatement stmt) {
         if (continueLabels.isEmpty()) {
-            throw new RuntimeException("continue statement not inside loop at line " + stmt.getLine());
+            throw new RuntimeException("continue statement not inside loop at line " + stmt.line());
         }
         
         jasminComment("Continue statement");
@@ -328,7 +328,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     @Override
     public Void visitBlockStatement(BlockStatement block) {
-        for (Statement stmt : block.getStatements()) {
+        for (Statement stmt : block.statements()) {
             stmt.accept(this);
         }
         return null;
@@ -336,9 +336,9 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     @Override
     public Void visitExpressionStatement(ExpressionStatement exprStmt) {
-        exprStmt.getExpression().accept(this);
+        exprStmt.expression().accept(this);
         // Pop the result only if the expression returns a value
-        Expression expr = exprStmt.getExpression();
+        Expression expr = exprStmt.expression();
         if (expr.getType() != null && !"void".equals(expr.getType().getName())) {
             methodGenerator.visitInsn(POP);
         }
@@ -347,17 +347,17 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     @Override
     public Void visitReturnStatement(ReturnStatement returnStmt) {
-        if (returnStmt.getValue() != null) {
+        if (returnStmt.value() != null) {
             jasminComment("Return with value");
-            returnStmt.getValue().accept(this);  // Generate return value
+            returnStmt.value().accept(this);  // Generate return value
             
             // CRITICAL: Handle type conversion for long returns
             // Always convert to long when function returns long, since most expressions
             // produce int values on the JVM stack regardless of AST-level type inference
             if (isLongType(currentFunctionReturnType)) {
                 // Check if the return expression produces a long value or needs conversion
-                if (producesLongValue(returnStmt.getValue()) || 
-                    isLongArithmeticExpression(returnStmt.getValue())) {
+                if (producesLongValue(returnStmt.value()) ||
+                    isLongArithmeticExpression(returnStmt.value())) {
                     jasminComment("Return value already long - no conversion needed");
                 } else {
                     jasminComment("Converting int to long for ulong return");
@@ -384,7 +384,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
         int endLabelId = ++labelCounter;
         
         // Generate condition
-        ifStmt.getCondition().accept(this);
+        ifStmt.condition().accept(this);
         methodGenerator.visitJumpInsn(IFEQ, elseLabel);  // Jump to else if false
         jasminInstruction("ifeq else_" + elseLabelId);
         
@@ -423,12 +423,12 @@ public class CodeGenerator implements ASTVisitor<Void> {
         jasminLabel("while_start_" + startLabelId);
         
         // Generate condition
-        whileStmt.getCondition().accept(this);
+        whileStmt.condition().accept(this);
         methodGenerator.visitJumpInsn(IFEQ, endLabel);  // Exit if false
         jasminInstruction("ifeq while_end_" + endLabelId);
         
         // Generate body
-        whileStmt.getBody().accept(this);
+        whileStmt.body().accept(this);
         
         // Jump back to condition
         methodGenerator.visitJumpInsn(GOTO, startLabel);
@@ -908,14 +908,14 @@ public class CodeGenerator implements ASTVisitor<Void> {
         StringBuilder descriptor = new StringBuilder("(");
         
         // Parameter types
-        for (FunctionDeclaration.Parameter param : funcDecl.getParameters()) {
-            descriptor.append(getJVMTypeDescriptor(param.type));
+        for (FunctionDeclaration.Parameter param : funcDecl.parameters()) {
+            descriptor.append(getJVMTypeDescriptor(param.type()));
         }
         
         descriptor.append(")");
         
         // Return type
-        descriptor.append(getJVMTypeDescriptor(funcDecl.getReturnType()));
+        descriptor.append(getJVMTypeDescriptor(funcDecl.returnType()));
         
         return descriptor.toString();
     }

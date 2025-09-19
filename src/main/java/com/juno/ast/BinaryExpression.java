@@ -37,8 +37,8 @@ public class BinaryExpression implements Expression {
     }
 
     @Override
-    public int getLine() { return line; }
+    public int line() { return line; }
 
     @Override
-    public int getColumn() { return column; }
+    public int column() { return column; }
 }

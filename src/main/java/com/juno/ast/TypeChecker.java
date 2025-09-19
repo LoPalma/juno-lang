@@ -83,9 +83,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         // Check if struct is already declared
         if (symbolTable.isDeclaredLocally(structName)) {
             errorCollector.addError(new CompilerError(
-                "Struct '" + structName + "' is already declared in current scope",
-                ErrorCode.DUPLICATE_DECLARATION,
-                structDecl.getLine(), structDecl.getColumn()
+								"Struct '" + structName + "' is already declared in current scope",
+								ErrorCode.DUPLICATE_DECLARATION,
+								structDecl.line(), structDecl.column()
             ));
         }
         
@@ -102,16 +102,16 @@ public class TypeChecker implements ASTVisitor<Type> {
     
     @Override
     public Type visitVariableDeclaration(VariableDeclaration varDecl) {
-        String varName = varDecl.getName();
+        String varName = varDecl.name();
         Type declaredType = varDecl.getDeclaredType();
-        Expression initializer = varDecl.getInitializer();
+        Expression initializer = varDecl.initializer();
         
         // Check if variable is already declared in current scope
         if (symbolTable.isDeclaredLocally(varName)) {
             errorCollector.addError(new CompilerError(
-                "Variable '" + varName + "' is already declared in current scope",
-                ErrorCode.DUPLICATE_DECLARATION,
-                varDecl.getLine(), varDecl.getColumn()
+								"Variable '" + varName + "' is already declared in current scope",
+								ErrorCode.DUPLICATE_DECLARATION,
+								varDecl.line(), varDecl.column()
             ));
             return declaredType;
         }
@@ -132,9 +132,9 @@ public class TypeChecker implements ASTVisitor<Type> {
                     finalType = initType;
                 } else {
                     errorCollector.addError(new CompilerError(
-                        "Cannot infer type for 'auto' variable '" + varName + "' from void expression",
-                        ErrorCode.TYPE_INFERENCE_ERROR,
-                        varDecl.getLine(), varDecl.getColumn()
+												"Cannot infer type for 'auto' variable '" + varName + "' from void expression",
+												ErrorCode.TYPE_INFERENCE_ERROR,
+												varDecl.line(), varDecl.column()
                     ));
                 }
             }
@@ -143,9 +143,9 @@ public class TypeChecker implements ASTVisitor<Type> {
                 // 'any' can accept any non-void type
                 if (initType != null && initType.getName().equals("void")) {
                     errorCollector.addError(new CompilerError(
-                        "Cannot assign void expression to 'any' variable '" + varName + "'",
-                        ErrorCode.TYPE_MISMATCH,
-                        varDecl.getLine(), varDecl.getColumn()
+												"Cannot assign void expression to 'any' variable '" + varName + "'",
+												ErrorCode.TYPE_MISMATCH,
+												varDecl.line(), varDecl.column()
                     ));
                 }
             }
@@ -153,9 +153,9 @@ public class TypeChecker implements ASTVisitor<Type> {
             else {
                 if (!isAssignmentCompatible(initType, declaredType)) {
                     errorCollector.addError(new CompilerError(
-                        "Cannot assign " + initType + " to variable '" + varName + "' of type " + declaredType,
-                        ErrorCode.TYPE_MISMATCH,
-                        varDecl.getLine(), varDecl.getColumn()
+												"Cannot assign " + initType + " to variable '" + varName + "' of type " + declaredType,
+												ErrorCode.TYPE_MISMATCH,
+												varDecl.line(), varDecl.column()
                     ));
                 }
             }
@@ -163,22 +163,22 @@ public class TypeChecker implements ASTVisitor<Type> {
             // No initializer - check if auto type (requires initialization)
             if (declaredType instanceof SpecialTypes.AutoType) {
                 errorCollector.addError(new CompilerError(
-                    "'auto' variable '" + varName + "' must be initialized",
-                    ErrorCode.UNINITIALIZED_AUTO,
-                    varDecl.getLine(), varDecl.getColumn()
+										"'auto' variable '" + varName + "' must be initialized",
+										ErrorCode.UNINITIALIZED_AUTO,
+										varDecl.line(), varDecl.column()
                 ));
             }
         }
         
         // Declare variable in symbol table
         try {
-            symbolTable.declareVariable(varName, finalType, true, isInitialized, 
-                                      varDecl.getLine(), varDecl.getColumn());
+            symbolTable.declareVariable(varName, finalType, true, isInitialized,
+																				varDecl.line(), varDecl.column());
         } catch (IllegalArgumentException e) {
             errorCollector.addError(new CompilerError(
-                e.getMessage(),
-                ErrorCode.DUPLICATE_DECLARATION,
-                varDecl.getLine(), varDecl.getColumn()
+								e.getMessage(),
+								ErrorCode.DUPLICATE_DECLARATION,
+								varDecl.line(), varDecl.column()
             ));
         }
         
@@ -187,28 +187,28 @@ public class TypeChecker implements ASTVisitor<Type> {
     
     @Override
     public Type visitFunctionDeclaration(FunctionDeclaration funcDecl) {
-        String funcName = funcDecl.getName();
-        Type returnType = funcDecl.getReturnType();
+        String funcName = funcDecl.name();
+        Type returnType = funcDecl.returnType();
         
         // Check if function is already declared in current scope
         if (symbolTable.isDeclaredLocally(funcName)) {
             errorCollector.addError(new CompilerError(
-                "Function '" + funcName + "' is already declared in current scope",
-                ErrorCode.DUPLICATE_DECLARATION,
-                funcDecl.getLine(), funcDecl.getColumn()
+								"Function '" + funcName + "' is already declared in current scope",
+								ErrorCode.DUPLICATE_DECLARATION,
+								funcDecl.line(), funcDecl.column()
             ));
             return returnType;
         }
         
         // Declare function in current scope
         try {
-            symbolTable.declareFunction(funcName, returnType, true, 
-                                      funcDecl.getLine(), funcDecl.getColumn());
+            symbolTable.declareFunction(funcName, returnType, true,
+																				funcDecl.line(), funcDecl.column());
         } catch (IllegalArgumentException e) {
             errorCollector.addError(new CompilerError(
-                e.getMessage(),
-                ErrorCode.DUPLICATE_DECLARATION,
-                funcDecl.getLine(), funcDecl.getColumn()
+								e.getMessage(),
+								ErrorCode.DUPLICATE_DECLARATION,
+								funcDecl.line(), funcDecl.column()
             ));
         }
         
@@ -218,22 +218,22 @@ public class TypeChecker implements ASTVisitor<Type> {
         currentFunctionReturnType = returnType;
         
         // Declare parameters in function scope
-        for (FunctionDeclaration.Parameter param : funcDecl.getParameters()) {
+        for (FunctionDeclaration.Parameter param : funcDecl.parameters()) {
             try {
-                symbolTable.declareVariable(param.name, param.type, true, true, 
-                                          funcDecl.getLine(), funcDecl.getColumn());
+                symbolTable.declareVariable(param.name(), param.type(), true, true,
+																						funcDecl.line(), funcDecl.column());
             } catch (IllegalArgumentException e) {
                 errorCollector.addError(new CompilerError(
-                    "Parameter '" + param.name + "' is already declared",
-                    ErrorCode.DUPLICATE_DECLARATION,
-                    funcDecl.getLine(), funcDecl.getColumn()
+										"Parameter '" + param.name() + "' is already declared",
+										ErrorCode.DUPLICATE_DECLARATION,
+										funcDecl.line(), funcDecl.column()
                 ));
             }
         }
         
         // Type check function body
-        if (funcDecl.getBody() != null) {
-            funcDecl.getBody().accept(this);
+        if (funcDecl.body() != null) {
+            funcDecl.body().accept(this);
         }
         
         // Restore previous state
@@ -249,7 +249,7 @@ public class TypeChecker implements ASTVisitor<Type> {
     public Type visitBlockStatement(BlockStatement block) {
         symbolTable.enterScope("block");
         
-        for (Statement stmt : block.getStatements()) {
+        for (Statement stmt : block.statements()) {
             stmt.accept(this);
         }
         
@@ -259,20 +259,20 @@ public class TypeChecker implements ASTVisitor<Type> {
     
     @Override
     public Type visitExpressionStatement(ExpressionStatement exprStmt) {
-        exprStmt.getExpression().accept(this);
+        exprStmt.expression().accept(this);
         return PrimitiveType.VOID;
     }
     
     @Override
     public Type visitIfStatement(IfStatement ifStmt) {
-        Type conditionType = ifStmt.getCondition().accept(this);
+        Type conditionType = ifStmt.condition().accept(this);
         
         // Check that condition is boolean
         if (!isCompatible(conditionType, PrimitiveType.BOOL)) {
             errorCollector.addError(new CompilerError(
-                "If condition must be boolean, got " + conditionType,
-                ErrorCode.TYPE_MISMATCH,
-                ifStmt.getLine(), ifStmt.getColumn()
+								"If condition must be boolean, got " + conditionType,
+								ErrorCode.TYPE_MISMATCH,
+								ifStmt.line(), ifStmt.column()
             ));
         }
         
@@ -287,19 +287,19 @@ public class TypeChecker implements ASTVisitor<Type> {
     
     @Override
     public Type visitWhileStatement(WhileStatement whileStmt) {
-        Type conditionType = whileStmt.getCondition().accept(this);
+        Type conditionType = whileStmt.condition().accept(this);
         
         // Check that condition is boolean
         if (!isCompatible(conditionType, PrimitiveType.BOOL)) {
             errorCollector.addError(new CompilerError(
-                "While condition must be boolean, got " + conditionType,
-                ErrorCode.TYPE_MISMATCH,
-                whileStmt.getLine(), whileStmt.getColumn()
+								"While condition must be boolean, got " + conditionType,
+								ErrorCode.TYPE_MISMATCH,
+								whileStmt.line(), whileStmt.column()
             ));
         }
         
         // Type check loop body
-        whileStmt.getBody().accept(this);
+        whileStmt.body().accept(this);
         
         return PrimitiveType.VOID;
     }
@@ -310,39 +310,39 @@ public class TypeChecker implements ASTVisitor<Type> {
         symbolTable.enterScope("for_loop");
         
         // Handle loop variable declaration
-        String varName = forStmt.getVariableName();
-        Type varType = forStmt.getVariableType();
+        String varName = forStmt.variableName();
+        Type varType = forStmt.variableType();
         
         // Handle optional initializer
-        if (forStmt.getInitializer() != null) {
-            Type initType = forStmt.getInitializer().accept(this);
+        if (forStmt.initializer() != null) {
+            Type initType = forStmt.initializer().accept(this);
             if (!isCompatible(initType, varType)) {
                 errorCollector.addError(new CompilerError(
-                    "For-in loop initializer type " + initType + " is not compatible with variable type " + varType,
-                    ErrorCode.TYPE_MISMATCH,
-                    forStmt.getLine(), forStmt.getColumn()
+										"For-in loop initializer type " + initType + " is not compatible with variable type " + varType,
+										ErrorCode.TYPE_MISMATCH,
+										forStmt.line(), forStmt.column()
                 ));
             }
         }
         
         // Declare loop variable
         try {
-            symbolTable.declareVariable(varName, varType, true, true, 
-                                      forStmt.getLine(), forStmt.getColumn());
+            symbolTable.declareVariable(varName, varType, true, true,
+																				forStmt.line(), forStmt.column());
         } catch (IllegalArgumentException e) {
             errorCollector.addError(new CompilerError(
-                e.getMessage(),
-                ErrorCode.DUPLICATE_DECLARATION,
-                forStmt.getLine(), forStmt.getColumn()
+								e.getMessage(),
+								ErrorCode.DUPLICATE_DECLARATION,
+								forStmt.line(), forStmt.column()
             ));
         }
         
         // Type check iterable expression
-        Type iterableType = forStmt.getIterable().accept(this);
+        Type iterableType = forStmt.iterable().accept(this);
         // TODO: Add proper iterable type checking when we have collections
         
         // Type check loop body
-        forStmt.getBody().accept(this);
+        forStmt.body().accept(this);
         
         symbolTable.exitScope();
         return PrimitiveType.VOID;
@@ -352,29 +352,29 @@ public class TypeChecker implements ASTVisitor<Type> {
     public Type visitReturnStatement(ReturnStatement returnStmt) {
         if (currentFunctionReturnType == null) {
             errorCollector.addError(new CompilerError(
-                "Return statement outside of function",
-                ErrorCode.RETURN_OUTSIDE_FUNCTION,
-                returnStmt.getLine(), returnStmt.getColumn()
+								"Return statement outside of function",
+								ErrorCode.RETURN_OUTSIDE_FUNCTION,
+								returnStmt.line(), returnStmt.column()
             ));
             return PrimitiveType.VOID;
         }
         
-        if (returnStmt.getValue() != null) {
-            Type valueType = returnStmt.getValue().accept(this);
+        if (returnStmt.value() != null) {
+            Type valueType = returnStmt.value().accept(this);
             if (!isCompatible(valueType, currentFunctionReturnType)) {
                 errorCollector.addError(new CompilerError(
-                    "Return type " + valueType + " is not compatible with function return type " + currentFunctionReturnType,
-                    ErrorCode.TYPE_MISMATCH,
-                    returnStmt.getLine(), returnStmt.getColumn()
+										"Return type " + valueType + " is not compatible with function return type " + currentFunctionReturnType,
+										ErrorCode.TYPE_MISMATCH,
+										returnStmt.line(), returnStmt.column()
                 ));
             }
         } else {
             // Return with no value - function should return void
             if (!currentFunctionReturnType.getName().equals("void")) {
                 errorCollector.addError(new CompilerError(
-                    "Function with return type " + currentFunctionReturnType + " must return a value",
-                    ErrorCode.MISSING_RETURN_VALUE,
-                    returnStmt.getLine(), returnStmt.getColumn()
+										"Function with return type " + currentFunctionReturnType + " must return a value",
+										ErrorCode.MISSING_RETURN_VALUE,
+										returnStmt.line(), returnStmt.column()
                 ));
             }
         }
@@ -396,9 +396,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         
         if (resultType == null) {
             errorCollector.addError(new CompilerError(
-                "Invalid binary operation: " + leftType + " " + operator + " " + rightType,
-                ErrorCode.TYPE_MISMATCH,
-                expr.getLine(), expr.getColumn()
+								"Invalid binary operation: " + leftType + " " + operator + " " + rightType,
+								ErrorCode.TYPE_MISMATCH,
+								expr.line(), expr.column()
             ));
             return PrimitiveType.INT; // Return a reasonable default
         }
@@ -416,9 +416,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         
         if (resultType == null) {
             errorCollector.addError(new CompilerError(
-                "Invalid unary operation: " + operator + operandType,
-                ErrorCode.TYPE_MISMATCH,
-                expr.getLine(), expr.getColumn()
+								"Invalid unary operation: " + operator + operandType,
+								ErrorCode.TYPE_MISMATCH,
+								expr.line(), expr.column()
             ));
             return operandType; // Return operand type as fallback
         }
@@ -441,9 +441,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         
         if (symbol == null) {
             errorCollector.addError(new CompilerError(
-                "Undefined identifier '" + name + "'",
-                ErrorCode.UNDEFINED_IDENTIFIER,
-                expr.getLine(), expr.getColumn()
+								"Undefined identifier '" + name + "'",
+								ErrorCode.UNDEFINED_IDENTIFIER,
+								expr.line(), expr.column()
             ));
             return PrimitiveType.INT; // Return a reasonable default
         }
@@ -451,9 +451,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         // Check if variable is used before initialization
         if (!symbol.isFunction() && !symbol.isInitialized()) {
             errorCollector.addError(new CompilerError(
-                "Variable '" + name + "' used before initialization",
-                ErrorCode.UNINITIALIZED_VARIABLE,
-                expr.getLine(), expr.getColumn()
+								"Variable '" + name + "' used before initialization",
+								ErrorCode.UNINITIALIZED_VARIABLE,
+								expr.line(), expr.column()
             ));
         }
         
@@ -470,9 +470,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         // Check assignment compatibility
         if (!isAssignmentCompatible(valueType, targetType)) {
             errorCollector.addError(new CompilerError(
-                "Cannot assign " + valueType + " to " + targetType,
-                ErrorCode.TYPE_MISMATCH,
-                expr.getLine(), expr.getColumn()
+								"Cannot assign " + valueType + " to " + targetType,
+								ErrorCode.TYPE_MISMATCH,
+								expr.line(), expr.column()
             ));
         }
         
@@ -500,18 +500,18 @@ public class TypeChecker implements ASTVisitor<Type> {
             
             if (symbol == null) {
                 errorCollector.addError(new CompilerError(
-                    "Undefined function '" + functionName + "'",
-                    ErrorCode.UNDEFINED_IDENTIFIER,
-                    expr.getLine(), expr.getColumn()
+										"Undefined function '" + functionName + "'",
+										ErrorCode.UNDEFINED_IDENTIFIER,
+										expr.line(), expr.column()
                 ));
                 return PrimitiveType.VOID;
             }
             
             if (!symbol.isFunction()) {
                 errorCollector.addError(new CompilerError(
-                    "'" + functionName + "' is not a function",
-                    ErrorCode.NOT_A_FUNCTION,
-                    expr.getLine(), expr.getColumn()
+										"'" + functionName + "' is not a function",
+										ErrorCode.NOT_A_FUNCTION,
+										expr.line(), expr.column()
                 ));
                 return PrimitiveType.VOID;
             }
@@ -522,9 +522,9 @@ public class TypeChecker implements ASTVisitor<Type> {
             functionType = functionExpr.accept(this);
         } else {
             errorCollector.addError(new CompilerError(
-                "Invalid function call expression",
-                ErrorCode.INVALID_EXPRESSION,
-                expr.getLine(), expr.getColumn()
+								"Invalid function call expression",
+								ErrorCode.INVALID_EXPRESSION,
+								expr.line(), expr.column()
             ));
             return PrimitiveType.VOID;
         }
@@ -552,9 +552,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         
         // TODO: Add other modules as needed
         errorCollector.addError(new CompilerError(
-            "Unknown module: " + moduleName,
-            ErrorCode.UNDEFINED_IDENTIFIER,
-            expr.getLine(), expr.getColumn()
+						"Unknown module: " + moduleName,
+						ErrorCode.UNDEFINED_IDENTIFIER,
+						expr.line(), expr.column()
         ));
         return PrimitiveType.VOID;
     }
@@ -580,9 +580,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         // Check if cast is valid
         if (!isCastValid(sourceType, targetType)) {
             errorCollector.addError(new CompilerError(
-                "Invalid cast from " + sourceType + " to " + targetType,
-                ErrorCode.INVALID_CAST,
-                expr.getLine(), expr.getColumn()
+								"Invalid cast from " + sourceType + " to " + targetType,
+								ErrorCode.INVALID_CAST,
+								expr.line(), expr.column()
             ));
         }
         
@@ -612,9 +612,9 @@ public class TypeChecker implements ASTVisitor<Type> {
                 // Elements have different types - check if they're compatible
                 if (!isCompatible(elementType, commonType) && !isCompatible(commonType, elementType)) {
                     errorCollector.addError(new CompilerError(
-                        "Array literal has incompatible element types: " + commonType + " and " + elementType,
-                        ErrorCode.TYPE_MISMATCH,
-                        expr.getLine(), expr.getColumn()
+												"Array literal has incompatible element types: " + commonType + " and " + elementType,
+												ErrorCode.TYPE_MISMATCH,
+												expr.line(), expr.column()
                     ));
                     commonType = PrimitiveType.INT; // fallback
                     break;
@@ -639,9 +639,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         // Check that the array expression is actually an array type
         if (!(arrayType instanceof ArrayType)) {
             errorCollector.addError(new CompilerError(
-                "Cannot index non-array type: " + arrayType,
-                ErrorCode.TYPE_MISMATCH,
-                expr.getLine(), expr.getColumn()
+								"Cannot index non-array type: " + arrayType,
+								ErrorCode.TYPE_MISMATCH,
+								expr.line(), expr.column()
             ));
             return PrimitiveType.INT; // fallback
         }
@@ -649,9 +649,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         // Check that index is integer type
         if (!(indexType instanceof PrimitiveType) || !((PrimitiveType) indexType).isInteger()) {
             errorCollector.addError(new CompilerError(
-                "Array index must be integer type, got " + indexType,
-                ErrorCode.TYPE_MISMATCH,
-                expr.getLine(), expr.getColumn()
+								"Array index must be integer type, got " + indexType,
+								ErrorCode.TYPE_MISMATCH,
+								expr.line(), expr.column()
             ));
         }
         
@@ -680,9 +680,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         // Check that operand is an lvalue (can be addressed)
         if (!isLValue(expr.getOperand())) {
             errorCollector.addError(new CompilerError(
-                "Cannot take address of non-lvalue expression",
-                ErrorCode.TYPE_ERROR,
-                expr.getLine(), expr.getColumn()
+								"Cannot take address of non-lvalue expression",
+								ErrorCode.TYPE_ERROR,
+								expr.line(), expr.column()
             ));
         }
         
@@ -698,9 +698,9 @@ public class TypeChecker implements ASTVisitor<Type> {
         // Check that operand is a pointer type
         if (!(operandType instanceof PointerType)) {
             errorCollector.addError(new CompilerError(
-                "Cannot dereference non-pointer type: " + operandType,
-                ErrorCode.TYPE_ERROR,
-                expr.getLine(), expr.getColumn()
+								"Cannot dereference non-pointer type: " + operandType,
+								ErrorCode.TYPE_ERROR,
+								expr.line(), expr.column()
             ));
             return PrimitiveType.INT; // fallback
         }

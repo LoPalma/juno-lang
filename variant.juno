@@ -1,0 +1,12 @@
+import Io;
+
+void main() {
+	// variant types demo
+	Io.println("This program demonstrates variant types");
+	
+	string|int x = "";
+	x = 5;
+	Io.println("X's integer value is: " ^^ x);
+	x = ":D";
+	Io.println("X's string value is '" ^^ x ^^ "'");
+}

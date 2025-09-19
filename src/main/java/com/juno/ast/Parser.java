@@ -17,7 +17,6 @@ import com.juno.types.PointerType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Arrays;
 
 /**
  * Recursive descent parser for the C-like language with sophisticated error reporting.
@@ -260,7 +259,7 @@ public class Parser {
             advance(); // consume first ^
             advance(); // consume second ^
             Expression right = parseShift();
-            expr = new BinaryExpression(expr, "^^", right, expr.getLine(), expr.getColumn());
+            expr = new BinaryExpression(expr, "^^", right, expr.line(), expr.column());
         }
         
         return expr;
@@ -385,7 +384,7 @@ public class Parser {
     private Expression finishArrayIndex(Expression array) throws CompilerError {
         Expression index = parseExpression();
         Token bracket = consume(TokenType.RIGHT_BRACKET, "Expected ']' after array index.");
-        return new ArrayIndexExpression(array, index, array.getLine(), array.getColumn());
+        return new ArrayIndexExpression(array, index, array.line(), array.column());
     }
     
     private Expression parsePrimary() throws CompilerError {
@@ -810,7 +809,7 @@ public class Parser {
     private ExpressionStatement parseExpressionStatement() throws CompilerError {
         Expression expr = parseExpression();
         consume(TokenType.SEMICOLON, "Expected ';' after expression.");
-        return new ExpressionStatement(expr, expr.getLine(), expr.getColumn());
+        return new ExpressionStatement(expr, expr.line(), expr.column());
     }
     
     // ========== HELPER METHODS ==========

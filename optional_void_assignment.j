@@ -1,4 +1,4 @@
-.class public test_union_simple
+.class public optional_void_assignment
 .super java/lang/Object
 
 .method public <init>()V
@@ -13,11 +13,13 @@
 .method public static main()V
     .limit stack 20
     .limit locals 20
-; Local variable: string|int x
+; Local variable: optional int x
     bipush 0
-; Convert int to string|int
-    invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer; ; box int to union
-    astore 0 ; union type
+; Convert int to optional int
+    astore 0
+    bipush 5
+; Convert int to optional int for assignment
+    astore 0
     return
 .end method
 
@@ -25,7 +27,7 @@
 .method public static main([Ljava/lang/String;)V
     .limit stack 10
     .limit locals 1
-    invokestatic test_union_simple/main()V
+    invokestatic optional_void_assignment/main()V
     return
 .end method
 
