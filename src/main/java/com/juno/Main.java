@@ -26,14 +26,13 @@ public class Main {
 			}
 			String sourceFile = args[0];
 
-			String sourceFile = args[0];
-				boolean debugAST = false;
-				for (String arg : args) {
-					if ("--ast-dump".equals(arg)) {
-						debugAST = true;
-						break;
-					}
+			boolean debugAST = false;
+			for (String arg : args) {
+				if ("--ast-dump".equals(arg)) {
+					debugAST = true;
+					break;
 				}
+			}
 
 
 			// Check for Jasmin generation flag from environment
