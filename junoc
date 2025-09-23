@@ -16,17 +16,23 @@ done
 
 # Parse command line arguments
 GENERATE_JASMIN=false
-KEEP_CLASS=true  # Changed: default to keeping class files
+KEEP_CLASS=true  # default: keep class files
 SOURCE_FILE=""
+EXTRA_ARGS=()   # store flags to forward
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -n|--no-class)  # Changed: flag to NOT generate class files
+        -n|--no-class)
             KEEP_CLASS=false
             shift
             ;;
         -j|--jasmin)
             GENERATE_JASMIN=true
+            shift
+            ;;
+        -a|--ast-dump)
+            # Forward as --ast-dump to the compiler
+            EXTRA_ARGS+=("--ast-dump")
             shift
             ;;
         -h|--help)
@@ -36,14 +42,16 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  -c, --class     Generate JVM ByteCode (.class) files"
             echo "  -j, --jasmin    Generate Jasmin assembly (.j) files"
+            echo "  -a, --ast-dump  Pretty print AST"
             echo "  -h, --help      Show this help message"
             echo ""
             echo "Supported file extensions: .jl, .juno"
             exit 0
             ;;
         -*)
-            echo "Unknown option: $1" >&2
-            exit 1
+            # Unknown flags are forwarded as-is
+            EXTRA_ARGS+=("$1")
+            shift
             ;;
         *)
             if [[ -z "$SOURCE_FILE" ]]; then
@@ -73,15 +81,14 @@ if [[ "$GENERATE_JASMIN" == true ]]; then
     export JUNO_GENERATE_JASMIN=true
 fi
 
-
 SOURCE_BASE=$(basename "$SOURCE_FILE" .juno)
 SOURCE_BASE=$(basename "$SOURCE_BASE" .jl)
 EXPECTED_CLASS="${SOURCE_BASE}.class"
 
-# Execute the compiler
-exec java -cp "$CLASSPATH" com.juno.Main "$SOURCE_FILE"
+# Execute the compiler with forwarded extra arguments
+exec java -cp "$CLASSPATH" com.juno.Main "$SOURCE_FILE" "${EXTRA_ARGS[@]}"
 
-# Clean up only our generated file
+# Clean up only our generated file if requested
 if [[ "$KEEP_CLASS" == false ]] && [[ -f "$EXPECTED_CLASS" ]]; then
     rm -f "$EXPECTED_CLASS"
 fi

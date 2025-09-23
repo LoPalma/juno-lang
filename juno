@@ -1,3 +1,93 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
-java -cp ".:target/classes" $1
+# Path to Juno compiler
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JUNOC="$SCRIPT_DIR/junoc"
+JUNO_CLASSES="$SCRIPT_DIR/target/classes"
+
+# Help menu
+function show_help() {
+    cat <<EOF
+Juno CLI - Wrapper for Juno Compiler
+
+Usage:
+  juno build <files...> [flags]   Compile Juno source files only
+  juno run <files...> [flags]     Compile and run Juno programs
+  juno exec <classname> [args...] Run previously compiled JVM class
+  juno help                        Show this help menu
+
+Notes:
+  - All flags after source files are passed to the compiler (e.g., -j / --jasmin)
+EOF
+}
+
+# Check minimum args
+if [ $# -lt 1 ]; then
+    show_help
+    exit 1
+fi
+
+COMMAND="$1"
+shift # remove the command
+
+case "$COMMAND" in
+    help|-h|--help)
+        show_help
+        exit 0
+        ;;
+    build)
+        if [ $# -lt 1 ]; then
+            echo "Error: No source files provided for build."
+            exit 1
+        fi
+        FILES=()
+        FLAGS=()
+        for arg in "$@"; do
+            if [[ "$arg" == -* ]]; then
+                FLAGS+=("$arg")
+            else
+                FILES+=("$arg")
+            fi
+        done
+        for f in "${FILES[@]}"; do
+            "$JUNOC" "$f" "${FLAGS[@]}" || exit 1
+        done
+        ;;
+    run)
+        if [ $# -lt 1 ]; then
+            echo "Error: No source files provided for run."
+            exit 1
+        fi
+        FILES=()
+        FLAGS=()
+        for arg in "$@"; do
+            if [[ "$arg" == -* ]]; then
+                FLAGS+=("$arg")
+            else
+                FILES+=("$arg")
+            fi
+        done
+        # Compile all files first
+        for f in "${FILES[@]}"; do
+            "$JUNOC" "$f" "${FLAGS[@]}" || exit 1
+        done
+        # Run the last compiled program
+        BASENAME="${FILES[-1]}"
+        BASENAME="${BASENAME%.juno}"
+        java -cp ".:$JUNO_CLASSES" "$BASENAME"
+        ;;
+    exec)
+        if [ $# -lt 1 ]; then
+            echo "Error: No class name provided for exec."
+            exit 1
+        fi
+        CLASSNAME="$1"
+        shift
+        java -cp ".:$JUNO_CLASSES" "$CLASSNAME" "$@"
+        ;;
+    *)
+        echo "Unknown command: $COMMAND"
+        show_help
+        exit 1
+        ;;
+esac

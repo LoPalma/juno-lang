@@ -20,15 +20,23 @@ import java.nio.file.Paths;
  */
 public class Main {
     public static void main(String[] args) {
-        if (args.length < 1 || args.length > 2) {
-            System.err.println("Usage: junoc [-j] <source-file>");
-            System.exit(1);
-        }
+			if (args.length < 1) {
+				System.err.println("Usage: junoc <source-file> [flags]");
+				System.exit(1);
+			}
+			String sourceFile = args[0];
 
-        String sourceFile = args[0];
-        boolean debugAST = args.length > 1 && "--debug-ast".equals(args[1]);
-        
-        // Check for Jasmin generation flag from environment
+			String sourceFile = args[0];
+				boolean debugAST = false;
+				for (String arg : args) {
+					if ("--ast-dump".equals(arg)) {
+						debugAST = true;
+						break;
+					}
+				}
+
+
+			// Check for Jasmin generation flag from environment
         boolean generateJasmin = "true".equals(System.getenv("JUNO_GENERATE_JASMIN"));
         
         try {

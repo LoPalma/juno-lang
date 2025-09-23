@@ -35,11 +35,11 @@ public class CodeGenerator implements ASTVisitor<Void> {
     private int labelCounter = 0;  // Counter for unique labels
     
     // Break/continue label stack for loops
-    private java.util.Stack<Label> breakLabels = new java.util.Stack<>();
-    private java.util.Stack<Label> continueLabels = new java.util.Stack<>();
+    private final java.util.Stack<Label> breakLabels = new java.util.Stack<>();
+    private final java.util.Stack<Label> continueLabels = new java.util.Stack<>();
     
     // Jasmin assembly generation
-    private PrintWriter jasminWriter;
+    // private PrintWriter jasminWriter;
     private StringBuilder jasminOutput;
     private boolean hasJunoMainMethod = false;
     private com.juno.types.Type junoMainReturnType = null;
@@ -444,7 +444,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
         
         return null;
     }
-    
+
     @Override
     public Void visitForInStatement(ForInStatement forStmt) {
         // TODO: Implement for-in loops (requires iterator support)
@@ -602,7 +602,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
         com.juno.types.Type astType = expr.getType();
         
         // Check if AST type indicates this should be a long value
-        boolean shouldBeLong = (astType != null && isLongType(astType));
+        boolean shouldBeLong = (isLongType(astType));
         
         if (value instanceof Long) {
             long longValue = (Long) value;
@@ -620,43 +620,34 @@ public class CodeGenerator implements ASTVisitor<Void> {
             }
         } else if (value instanceof Integer) {
             int intValue = (Integer) value;
-            
-            if (shouldBeLong) {
-                // Integer value but AST type is long - generate as int then convert
-                if (intValue >= -128 && intValue <= 127) {
-                    methodGenerator.visitIntInsn(BIPUSH, intValue);
-                    jasminInstruction("bipush " + intValue);
-                } else if (intValue >= -32768 && intValue <= 32767) {
-                    methodGenerator.visitIntInsn(SIPUSH, intValue);
-                    jasminInstruction("sipush " + intValue);
-                } else {
-                    methodGenerator.visitLdcInsn(intValue);
-                    jasminInstruction("ldc " + intValue);
-                }
-                // Convert int to long since AST type is long
+
+					if (intValue >= -128 && intValue <= 127) {
+							methodGenerator.visitIntInsn(BIPUSH, intValue);
+							jasminInstruction("bipush " + intValue);
+					} else if (intValue >= -32768 && intValue <= 32767) {
+							methodGenerator.visitIntInsn(SIPUSH, intValue);
+							jasminInstruction("sipush " + intValue);
+					} else {
+							methodGenerator.visitLdcInsn(intValue);
+							jasminInstruction("ldc " + intValue);
+					}
+					if (shouldBeLong) {
+                /* Integer value but AST type is long - generate as int then convert
+								 * int to long since AST type is long
+								 */
                 methodGenerator.visitInsn(I2L);
                 jasminInstruction("i2l ; convert to long for AST type");
             } else {
                 // Regular integer literal
-                if (intValue >= -128 && intValue <= 127) {
-                    methodGenerator.visitIntInsn(BIPUSH, intValue);
-                    jasminInstruction("bipush " + intValue);
-                } else if (intValue >= -32768 && intValue <= 32767) {
-                    methodGenerator.visitIntInsn(SIPUSH, intValue);
-                    jasminInstruction("sipush " + intValue);
-                } else {
-                    methodGenerator.visitLdcInsn(intValue);
-                    jasminInstruction("ldc " + intValue);
-                }
-            }
+					}
         } else if (value instanceof Float) {
-            methodGenerator.visitLdcInsn((Float) value);
+            methodGenerator.visitLdcInsn(value);
             jasminInstruction("ldc " + value + "f");
         } else if (value instanceof Double) {
-            methodGenerator.visitLdcInsn((Double) value);
+            methodGenerator.visitLdcInsn(value);
             jasminInstruction("ldc2_w " + value + "d");
         } else if (value instanceof String) {
-            methodGenerator.visitLdcInsn((String) value);
+            methodGenerator.visitLdcInsn(value);
             jasminInstruction("ldc \"" + value + "\"");
         } else if (value instanceof Boolean) {
             boolean boolValue = (Boolean) value;
@@ -664,7 +655,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
             jasminInstruction("bipush " + (boolValue ? "1" : "0"));
         } else if (value instanceof Character) {
             char charValue = (Character) value;
-            methodGenerator.visitIntInsn(BIPUSH, (int) charValue);
+            methodGenerator.visitIntInsn(BIPUSH, charValue);
             jasminInstruction("bipush " + (int) charValue + " ; '" + charValue + "'");
         } else {
             throw new UnsupportedOperationException("Unsupported literal type: " + value.getClass());
@@ -696,12 +687,11 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     @Override
     public Void visitAssignmentExpression(AssignmentExpression expr) {
-        if (!(expr.getTarget() instanceof IdentifierExpression)) {
+        if (!(expr.getTarget() instanceof IdentifierExpression target)) {
             throw new UnsupportedOperationException("Only simple variable assignment supported");
         }
-        
-        IdentifierExpression target = (IdentifierExpression) expr.getTarget();
-        String varName = target.getName();
+
+			String varName = target.getName();
         Integer slot = localVariables.get(varName);
         
         if (slot == null) {
@@ -738,9 +728,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
         // Extract function name - support both simple and qualified calls
         if (function instanceof IdentifierExpression) {
             functionName = ((IdentifierExpression) function).getName();
-        } else if (function instanceof QualifiedIdentifier) {
-            QualifiedIdentifier qualId = (QualifiedIdentifier) function;
-            if ("Io".equals(qualId.getModuleName())) {
+        } else if (function instanceof QualifiedIdentifier qualId) {
+					if ("Io".equals(qualId.getModuleName())) {
                 generateIoCall(qualId.getIdentifier(), expr.getArguments());
                 return null;
             }
@@ -802,9 +791,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
         
         // Create array of appropriate type
         String elementJvmType = getJVMTypeDescriptor(elementType);
-        if (elementType instanceof PrimitiveType && !"string".equals(elementType.getName())) {
-            PrimitiveType primType = (PrimitiveType) elementType;
-            int arrayTypeCode = getJVMArrayTypeCode(primType);
+        if (elementType instanceof PrimitiveType primType && !"string".equals(elementType.getName())) {
+					int arrayTypeCode = getJVMArrayTypeCode(primType);
             methodGenerator.visitIntInsn(NEWARRAY, arrayTypeCode);
             jasminInstruction("newarray " + getJVMArrayTypeName(primType));
         } else {
@@ -857,9 +845,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
         // For now, we'll use a simple approach where &var creates a reference holder
         
         Expression operand = expr.getOperand();
-        if (operand instanceof IdentifierExpression) {
-            IdentifierExpression identExpr = (IdentifierExpression) operand;
-            String varName = identExpr.getName();
+        if (operand instanceof IdentifierExpression identExpr) {
+					String varName = identExpr.getName();
             
             // Create a simple pointer object that holds the variable reference
             // This is a simplified implementation - in practice, we'd need a proper Pointer class
@@ -932,7 +919,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
             // Only long-returning function calls actually produce long values
             if (isCallExpressionReturningLong(arg)) {
                 descriptor.append("J"); // Function call returning long
-            } else if (argType != null && isLongType(argType) && isLongLiteralExpression(arg)) {
+            } else if (isLongType(argType) && isLongLiteralExpression(arg)) {
                 descriptor.append("J"); // Large long literal that actually needs long
             } else {
                 descriptor.append("I"); // Everything else produces int on JVM stack
@@ -995,12 +982,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
         
         if (type instanceof PrimitiveType) {
             switch (type.getName()) {
-                case "bool": case "byte": case "ubyte": 
-                case "short": case "ushort": case "int": case "uint": case "char":
-                    methodGenerator.visitVarInsn(ILOAD, slot);
-                    jasminInstruction("iload " + slot);
-                    break;
-                case "long": case "ulong":
+							case "long": case "ulong":
                     methodGenerator.visitVarInsn(LLOAD, slot);
                     jasminInstruction("lload " + slot);
                     break;
@@ -1307,13 +1289,10 @@ public class CodeGenerator implements ASTVisitor<Void> {
         }
         
         // Check if conversion from int to long is needed (common case for literals)
-        if (isIntegerType(fromType) && isLongType(toType)) {
-            return true;
-        }
+			return isIntegerType(fromType) && isLongType(toType);
         
         // Add more conversion rules as needed
-        return false;
-    }
+		}
     
     /**
      * Generate JVM bytecode instructions to convert from one type to another.
@@ -1629,19 +1608,17 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     private boolean isCallExpressionReturningLong(Expression expr) {
         // Check if this expression is a function call that returns a long type
-        if (expr instanceof CallExpression) {
-            CallExpression callExpr = (CallExpression) expr;
-            com.juno.types.Type returnType = callExpr.getType();
-            return returnType != null && isLongType(returnType);
+        if (expr instanceof CallExpression callExpr) {
+					com.juno.types.Type returnType = callExpr.getType();
+            return isLongType(returnType);
         }
         return false;
     }
     
     private boolean isLongLiteralExpression(Expression expr) {
         // Check if this is a literal that actually needs to be represented as long
-        if (expr instanceof LiteralExpression) {
-            LiteralExpression litExpr = (LiteralExpression) expr;
-            Object value = litExpr.getValue();
+        if (expr instanceof LiteralExpression litExpr) {
+					Object value = litExpr.getValue();
             if (value instanceof Long) {
                 long longValue = (Long) value;
                 // Only use long descriptor for values that don't fit in int
@@ -1663,9 +1640,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
     
     private boolean isLongArithmeticExpression(Expression expr) {
         // Check if this is a binary expression that uses long arithmetic
-        if (expr instanceof BinaryExpression) {
-            BinaryExpression binExpr = (BinaryExpression) expr;
-            String operator = binExpr.getOperator();
+        if (expr instanceof BinaryExpression binExpr) {
+					String operator = binExpr.getOperator();
             // Check if it's an arithmetic operator that can produce long results
             if ("+".equals(operator) || "-".equals(operator) || 
                 "*".equals(operator) || "/".equals(operator) || "%".equals(operator)) {
@@ -1803,7 +1779,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
         
         // Determine the return type of Juno main
         boolean isVoidMain = junoMainReturnType != null && junoMainReturnType.getName().equals("void");
-        boolean isLongMain = junoMainReturnType != null && isLongType(junoMainReturnType);
+        boolean isLongMain = isLongType(junoMainReturnType);
         
         String callDescriptor;
         if (isVoidMain) {
@@ -1899,9 +1875,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
      * Generate array store instruction based on element type.
      */
     private void generateArrayStore(com.juno.types.Type elementType) {
-        if (elementType instanceof PrimitiveType) {
-            PrimitiveType primType = (PrimitiveType) elementType;
-            switch (primType.getName()) {
+        if (elementType instanceof PrimitiveType primType) {
+					switch (primType.getName()) {
                 case "bool":
                     methodGenerator.visitInsn(BASTORE); // boolean uses byte array operations
                     jasminInstruction("bastore");
@@ -1952,9 +1927,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
      * Generate array load instruction based on element type.
      */
     private void generateArrayLoad(com.juno.types.Type elementType) {
-        if (elementType instanceof PrimitiveType) {
-            PrimitiveType primType = (PrimitiveType) elementType;
-            switch (primType.getName()) {
+        if (elementType instanceof PrimitiveType primType) {
+					switch (primType.getName()) {
                 case "bool":
                     methodGenerator.visitInsn(BALOAD); // boolean uses byte array operations
                     jasminInstruction("baload");

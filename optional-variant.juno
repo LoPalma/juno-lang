@@ -1,6 +1,7 @@
 import Io;
 
 void main() {
-	opt string msg = "hello";
+	opt string msg = "";
+	msg = "hi";
 	Io.println(msg);
 }

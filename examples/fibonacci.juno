@@ -1,0 +1,16 @@
+import Io;
+
+int fib(int n) {
+	if n < 2 {
+		return n;
+	}
+	return fib(n-1) + fib(n-2);
+}
+
+
+// example script
+void main() {
+	auto x = string<fib(9)>;
+	Io.println(x);
+	Io.println("Done!");
+}

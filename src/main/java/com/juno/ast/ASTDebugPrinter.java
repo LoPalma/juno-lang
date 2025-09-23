@@ -338,7 +338,7 @@ public class ASTDebugPrinter implements ASTVisitor<String> {
     
     @Override
     public String visitTypeAlias(TypeAlias stmt) {
-        return "TypeAlias { name: \"" + stmt.getAliasName() + "\", type: " + stmt.getAliasedType() + " }";
+        return "TypeAlias { name: \"" + stmt.aliasName() + "\", type: " + stmt.aliasedType() + " }";
     }
     
     @Override
