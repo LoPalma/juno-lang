@@ -8,44 +8,52 @@ package com.juno.ast;
  * Break statement: break;
  */
 class BreakStatement implements Statement {
-    private final int line, column;
-    
-    public BreakStatement(int line, int column) {
-        this.line = line;
-        this.column = column;
-    }
-    
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) { 
-        return visitor.visitBreakStatement(this); 
-    }
-    
-    @Override
-    public int line() { return line; }
-    
-    @Override
-    public int column() { return column; }
+	private final int line, column;
+
+	public BreakStatement(int line, int column) {
+		this.line = line;
+		this.column = column;
+	}
+
+	@Override
+	public <T> T accept(ASTVisitor<T> visitor) {
+		return visitor.visitBreakStatement(this);
+	}
+
+	@Override
+	public int line() {
+		return line;
+	}
+
+	@Override
+	public int column() {
+		return column;
+	}
 }
 
 /**
  * Continue statement: continue;
  */
 class ContinueStatement implements Statement {
-    private final int line, column;
-    
-    public ContinueStatement(int line, int column) {
-        this.line = line;
-        this.column = column;
-    }
-    
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) { 
-        return visitor.visitContinueStatement(this); 
-    }
-    
-    @Override
-    public int line() { return line; }
-    
-    @Override
-    public int column() { return column; }
+	private final int line, column;
+
+	public ContinueStatement(int line, int column) {
+		this.line = line;
+		this.column = column;
+	}
+
+	@Override
+	public <T> T accept(ASTVisitor<T> visitor) {
+		return visitor.visitContinueStatement(this);
+	}
+
+	@Override
+	public int line() {
+		return line;
+	}
+
+	@Override
+	public int column() {
+		return column;
+	}
 }

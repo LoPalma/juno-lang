@@ -6,39 +6,55 @@ import com.juno.types.Type;
  * Binary expression AST node (e.g., a + b, x == y).
  */
 public class BinaryExpression implements Expression {
-    private final Expression left;
-    private final String operator;
-    private final Expression right;
-    private final int line;
-    private final int column;
-    private Type type;
+	private final Expression left;
+	private final String operator;
+	private final Expression right;
+	private final int line;
+	private final int column;
+	private Type type;
 
-    public BinaryExpression(Expression left, String operator, Expression right, int line, int column) {
-        this.left = left;
-        this.operator = operator;
-        this.right = right;
-        this.line = line;
-        this.column = column;
-    }
+	public BinaryExpression(Expression left, String operator, Expression right, int line, int column) {
+		this.left = left;
+		this.operator = operator;
+		this.right = right;
+		this.line = line;
+		this.column = column;
+	}
 
-    public Expression getLeft() { return left; }
-    public String getOperator() { return operator; }
-    public Expression getRight() { return right; }
+	public Expression getLeft() {
+		return left;
+	}
 
-    @Override
-    public Type getType() { return type; }
+	public String getOperator() {
+		return operator;
+	}
 
-    @Override
-    public void setType(Type type) { this.type = type; }
+	public Expression getRight() {
+		return right;
+	}
 
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) {
-        return visitor.visitBinaryExpression(this);
-    }
+	@Override
+	public Type getType() {
+		return type;
+	}
 
-    @Override
-    public int line() { return line; }
+	@Override
+	public void setType(Type type) {
+		this.type = type;
+	}
 
-    @Override
-    public int column() { return column; }
+	@Override
+	public <T> T accept(ASTVisitor<T> visitor) {
+		return visitor.visitBinaryExpression(this);
+	}
+
+	@Override
+	public int line() {
+		return line;
+	}
+
+	@Override
+	public int column() {
+		return column;
+	}
 }
