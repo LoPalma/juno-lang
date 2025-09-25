@@ -1,1 +1,1 @@
-char empty = '';
+char wrong = 'wrong';

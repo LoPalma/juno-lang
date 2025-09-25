@@ -21,32 +21,34 @@ import java.nio.file.Paths;
 public class Main {
 	public static void main(String[] args) {
 		if (args.length < 1) {
-			System.err.println("Usage: junoc <source-file> [flags]");
+			System.err.println("Invalid amount of arguments");
 			System.exit(1);
 		}
 		String sourceFile = args[0];
 
 		boolean debugAST = false;
+		boolean verbose = false;
 		for (String arg : args) {
 			if ("--ast-dump".equals(arg)) {
 				debugAST = true;
-				break;
+			}
+			if ("--verbose".equals(arg) || "-v".equals(arg)) {
+				verbose = true;
 			}
 		}
-
 
 		// Check for Jasmin generation flag from environment
 		boolean generateJasmin = "true".equals(System.getenv("JUNO_GENERATE_JASMIN"));
 
 		try {
 			ErrorCollector errorCollector = new ErrorCollector();
-			compile(sourceFile, errorCollector, debugAST, generateJasmin);
+			compile(sourceFile, errorCollector, debugAST, generateJasmin, verbose);
 
 			// Print all errors and warnings
 			errorCollector.printAll();
 
 			// Only print summary if compilation completed
-			if (!errorCollector.hasErrors()) {
+			if (!errorCollector.hasErrors() && verbose) {
 				System.out.println("Compilation completed successfully.");
 			}
 
@@ -63,7 +65,7 @@ public class Main {
 		}
 	}
 
-	private static void compile(String sourceFile, ErrorCollector errorCollector, boolean debugAST, boolean generateJasmin) throws IOException {
+	private static void compile(String sourceFile, ErrorCollector errorCollector, boolean debugAST, boolean generateJasmin, boolean verbose) throws IOException {
 		Path sourcePath = Paths.get(sourceFile);
 		if (!Files.exists(sourcePath)) {
 			throw new IllegalArgumentException("Source file not found: " + sourceFile);
@@ -72,24 +74,24 @@ public class Main {
 		String source = Files.readString(sourcePath);
 		String[] sourceLines = source.split("\n");
 
-		System.out.println("Compiling: " + sourceFile);
+		if (verbose) System.out.println("Compiling: " + sourceFile);
 
 		// Lexical Analysis
-		System.out.println("Phase 1: Lexical Analysis");
+		if (verbose) System.out.println("Phase 1: Lexical Analysis");
 		Lexer lexer = new Lexer(source, sourceFile, errorCollector);
 		var tokens = lexer.tokenize();
-		System.out.println("Found " + tokens.size() + " tokens");
+		if (verbose) System.out.println("Found " + tokens.size() + " tokens");
 
 		// Parsing - skip if lexical errors prevent meaningful parsing
-		System.out.println("Phase 2: Parsing");
+		if (verbose) System.out.println("Phase 2: Parsing");
 		if (errorCollector.hasErrors()) {
-			System.out.println("Skipping parsing due to lexical errors");
+			if (verbose) System.out.println("Skipping parsing due to lexical errors");
 			return;
 		}
 
 		Parser parser = new Parser(tokens, sourceFile, sourceLines, errorCollector);
 		Program program = parser.parseProgram();
-		System.out.println("Parsed program with " + program.getStatements().size() + " statements");
+		if (verbose) System.out.println("Parsed program with " + program.getStatements().size() + " statements");
 
 		// Print AST if debug flag is enabled
 		if (debugAST) {
@@ -100,18 +102,18 @@ public class Main {
 		}
 
 		// Type Checking
-		System.out.println("Phase 3: Type Checking");
+		if (verbose) System.out.println("Phase 3: Type Checking");
 		if (errorCollector.hasErrors()) {
-			System.out.println("Skipping type checking due to previous errors");
+			if (verbose) System.out.println("Skipping type checking due to previous errors");
 			return;
 		}
 		TypeChecker typeChecker = new TypeChecker(errorCollector);
 		typeChecker.check(program);
 
 		// Code Generation
-		System.out.println("Phase 4: Code Generation");
+		if (verbose) System.out.println("Phase 4: Code Generation");
 		if (errorCollector.hasErrors()) {
-			System.out.println("Skipping code generation due to previous errors");
+			if (verbose) System.out.println("Skipping code generation due to previous errors");
 			return;
 		}
 

@@ -3,7 +3,7 @@
 # Usage: junoc [-j] <source-file.jl|.juno>
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-JAR_FILE="$SCRIPT_DIR/junoc-standalone.jar"
+JAR_FILE="/home/palma/side-projects/clike-jvm-lang/target/juno-1.0.0-SNAPSHOT.jar"
 LIB_DIR="$SCRIPT_DIR/lib"
 
 # Build classpath with all ASM dependencies

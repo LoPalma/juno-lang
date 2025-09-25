@@ -1,0 +1,5 @@
+import Io.{println};
+
+void main() {
+	Io.println("testing!");
+}

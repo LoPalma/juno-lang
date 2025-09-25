@@ -1,0 +1,7 @@
+import Io;
+
+void main() {
+	string test = "56";
+	int x = int<test>;
+	Io.println(test);
+}

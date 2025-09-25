@@ -29,7 +29,6 @@ public class ErrorReporter {
 		// Choose color based on error type
 		String color = error.getErrorCode().isError() ? RED : YELLOW;
 
-		// Elm-style header with dashes
 		sb.append(color).append(BOLD).append("-- ")
 				.append(error.getErrorCode().getCode().toUpperCase())
 				.append(" ")
@@ -40,14 +39,14 @@ public class ErrorReporter {
 				.append("\n\n");
 
 		// Contextual introduction
-		String intro = getElmStyleIntro(error);
+		String intro = getIntro(error);
 		sb.append(intro).append("\n\n");
 
 		// Source line with line number (no extra padding)
 		sb.append(String.format("%d| %s\n", error.getLine(), error.getSourceLine()));
 
 		// Error indicator line (correctly positioned)
-		String indicator = buildElmStyleIndicator(error, color);
+		String indicator = buildIndicator(error, color);
 		sb.append(indicator).append(RESET).append("\n");
 
 		// Detailed explanation
@@ -60,7 +59,7 @@ public class ErrorReporter {
 	/**
 	 * Builds Elm-style error indicator positioned correctly under the error.
 	 */
-	private static String buildElmStyleIndicator(CompilerError error, String color) {
+	private static String buildIndicator(CompilerError error, String color) {
 		StringBuilder sb = new StringBuilder();
 
 		// Calculate spacing: line number + "| " + position in source
@@ -82,7 +81,7 @@ public class ErrorReporter {
 	/**
 	 * Creates Elm-style contextual introduction based on error type.
 	 */
-	private static String getElmStyleIntro(CompilerError error) {
+	private static String getIntro(CompilerError error) {
 		switch (error.getErrorCode()) {
 			case BAD_SYNTAX:
 				if (error.getMessage().contains("unterminated")) {
@@ -98,7 +97,7 @@ public class ErrorReporter {
 					return "I found an empty character literal:";
 				}
 				else {
-					return "I got stuck while parsing this syntax:";
+					return "I do not know what's going on with this syntax: ";
 				}
 			case BAD_ARG:
 				return "I found a type mismatch in this function call:";
@@ -122,7 +121,7 @@ public class ErrorReporter {
 		switch (error.getErrorCode()) {
 			case BAD_SYNTAX:
 				if (error.getMessage().contains("unterminated character")) {
-					return "Character literals in our language must be enclosed in single quotes and contain\n" +
+					return "Character literals in Juno must be enclosed in single quotes and contain\n" +
 							"exactly one character. Here are some examples:\n\n" +
 							"    char letter = 'a';     -- good\n" +
 							"    char digit = '5';      -- good\n" +

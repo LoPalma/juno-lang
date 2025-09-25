@@ -1,9 +1,6 @@
-// hello.cl - Simple Hello World program
+import Io;
 
-import io;
-
-int main() {
+void main() {
     string message = "Hello, C-like JVM Language!";
-    io.print(message);
-    return 0;
+    Io.println(message);
 }

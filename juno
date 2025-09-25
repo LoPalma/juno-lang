@@ -1,93 +1,166 @@
 #!/usr/bin/env bash
 
+HELLO='import Io.{println};
+  void main() {
+  Io.println("Hello, Juno!");
+}'
+
 # Path to Juno compiler
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JUNOC="$SCRIPT_DIR/junoc"
 JUNO_CLASSES="$SCRIPT_DIR/target/classes"
 
+DEF_NAME="My Project"
+DEF_DESC="My description"
+DEF_VER="0.0.1"
+
 # Help menu
 function show_help() {
-    cat <<EOF
+  cat <<EOF
 Juno CLI - Wrapper for Juno Compiler
 
 Usage:
+  juno init <path>                Create a new project directory
+  juno config											Evaluate configuration file    (!)
+  						list								Print config to stdout         (!)
   juno build <files...> [flags]   Compile Juno source files only
   juno run <files...> [flags]     Compile and run Juno programs
   juno exec <classname> [args...] Run previously compiled JVM class
-  juno help                        Show this help menu
+  juno help                       Show this help menu
 
 Notes:
+  - (!) marked entries are work in progress.
   - All flags after source files are passed to the compiler (e.g., -j / --jasmin)
 EOF
 }
 
 # Check minimum args
 if [ $# -lt 1 ]; then
-    show_help
-    exit 1
+  show_help
+  exit 1
 fi
 
 COMMAND="$1"
 shift # remove the command
 
 case "$COMMAND" in
-    help|-h|--help)
-        show_help
-        exit 0
-        ;;
-    build)
-        if [ $# -lt 1 ]; then
-            echo "Error: No source files provided for build."
-            exit 1
-        fi
-        FILES=()
-        FLAGS=()
-        for arg in "$@"; do
-            if [[ "$arg" == -* ]]; then
-                FLAGS+=("$arg")
-            else
-                FILES+=("$arg")
-            fi
-        done
-        for f in "${FILES[@]}"; do
-            "$JUNOC" "$f" "${FLAGS[@]}" || exit 1
-        done
-        ;;
-    run)
-        if [ $# -lt 1 ]; then
-            echo "Error: No source files provided for run."
-            exit 1
-        fi
-        FILES=()
-        FLAGS=()
-        for arg in "$@"; do
-            if [[ "$arg" == -* ]]; then
-                FLAGS+=("$arg")
-            else
-                FILES+=("$arg")
-            fi
-        done
-        # Compile all files first
-        for f in "${FILES[@]}"; do
-            "$JUNOC" "$f" "${FLAGS[@]}" || exit 1
-        done
-        # Run the last compiled program
-        BASENAME="${FILES[-1]}"
-        BASENAME="${BASENAME%.juno}"
-        java -cp ".:$JUNO_CLASSES" "$BASENAME"
-        ;;
-    exec)
-        if [ $# -lt 1 ]; then
-            echo "Error: No class name provided for exec."
-            exit 1
-        fi
-        CLASSNAME="$1"
-        shift
-        java -cp ".:$JUNO_CLASSES" "$CLASSNAME" "$@"
-        ;;
-    *)
-        echo "Unknown command: $COMMAND"
-        show_help
-        exit 1
-        ;;
+init)
+  if [ $# -ne 1 ]; then
+    echo "Error: exactly one folder path required"
+    exit 1
+  fi
+  PROJECT_DIR="$1"
+
+  if [ -d "$PROJECT_DIR" ]; then
+    if [ -z "$(find "$PROJECT_DIR" -mindepth 1 -print -quit)" ]; then
+      cd "$PROJECT_DIR"
+    else
+      echo "Directory specified exists and is not empty"
+      exit 1
+    fi
+  fi
+
+  # Create project structure
+  mkdir -p "$PROJECT_DIR/src"
+  echo "$HELLO" > "$PROJECT_DIR/src/main.juno"
+
+  # Get user input
+  echo "Creating project manifest..."
+  echo ""
+  printf "Module name: "
+  read name
+  printf "Module version (0.0.1): "
+  read version
+  printf "Module description: "
+  read desc
+  printf "Module author ($USER): "
+  read author
+
+  # Apply defaults
+  name=${name:-$DEF_NAME}
+  version=${version:-$DEF_VER}
+  desc=${desc:-$DEF_DESC}
+  author=${author:-$USER}
+
+  # Generate JSON with jq
+  jq -n \
+    --arg name "$name" \
+    --arg version "$version" \
+    --arg entry "src/main.juno" \
+    --arg desc "$desc" \
+    --arg author "$author" \
+    '{
+      name: $name,
+      version: $version,
+      entry: $entry,
+      description: $desc,
+      author: $author
+    }' > "$PROJECT_DIR/juno.json"
+
+  if [ $PROJECT_DIR = "." ]; then
+  	echo "Created project $name in current directory"
+  else
+  	echo "Created project $name in $PROJECT_DIR"
+  fi
+  ;;
+  help|-h|--help)
+    show_help
+    exit 0
+    ;;
+  build)
+    if [ $# -lt 1 ]; then
+      echo "Error: No source files provided for build."
+      exit 1
+    fi
+    FILES=()
+    FLAGS=()
+    for arg in "$@"; do
+      if [[ "$arg" == -* ]]; then
+        FLAGS+=("$arg")
+      else
+        FILES+=("$arg")
+      fi
+    done
+    for f in "${FILES[@]}"; do
+      "$JUNOC" "$f" "${FLAGS[@]}" || exit 1
+    done
+    ;;
+  run)
+    if [ $# -lt 1 ]; then
+      echo "Error: No source files provided for run."
+      exit 1
+    fi
+    FILES=()
+    FLAGS=()
+    for arg in "$@"; do
+      if [[ "$arg" == -* ]]; then
+        FLAGS+=("$arg")
+      else
+        FILES+=("$arg")
+      fi
+    done
+    # Compile all files first
+    for f in "${FILES[@]}"; do
+      "$JUNOC" "$f" "${FLAGS[@]}" || exit 1
+    done
+    # Run the last compiled program
+    BASENAME="${FILES[-1]}"
+    BASENAME="${BASENAME%.juno}"
+    BASENAME="${BASENAME%.jl}"
+    java -cp ".:$JUNO_CLASSES" "$BASENAME"
+    ;;
+  exec)
+    if [ $# -lt 1 ]; then
+      echo "Error: No class name provided for exec."
+      exit 1
+    fi
+    CLASSNAME="$1"
+    shift
+    java -cp ".:$JUNO_CLASSES" "$CLASSNAME" "$@"
+    ;;
+  *)
+    echo "Unknown command: $COMMAND"
+    show_help
+    exit 1
+    ;;
 esac
