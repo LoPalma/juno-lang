@@ -1,6 +1,0 @@
-import Io;
-
-void main() {
-	string msg = "Hello Juno!";
-	Io.println(msg);
-}

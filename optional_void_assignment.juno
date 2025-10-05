@@ -1,4 +1,0 @@
-void main() {
-	opt int x = 0;
-	x = 5;
-}

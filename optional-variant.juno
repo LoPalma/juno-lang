@@ -1,7 +1,0 @@
-import Io;
-
-void main() {
-	opt string msg = "";
-	msg = "hi";
-	Io.println(msg);
-}

@@ -1,5 +1,0 @@
-import Io;
-
-void main() {
-	Io.println(string<0>);
-}
