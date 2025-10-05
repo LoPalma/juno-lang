@@ -66,3 +66,37 @@ bin/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Compiled class files
+*.class
+
+# Build artifacts
+target/
+dependency-reduced-pom.xml
+
+# Test files
+*test*.juno
+*test*.j
+fibonacci.juno
+hello.juno
+arrays.juno
+variant.juno
+pointers_fixed.class
+collective-test.juno
+optional*.juno
+optional*.class
+file.juno
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Release artifacts
+release/
+
+# Backup files
+*.backup
+
+# OS files
+.DS_Store

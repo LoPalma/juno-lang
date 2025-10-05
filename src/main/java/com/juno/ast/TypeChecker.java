@@ -22,11 +22,11 @@ public class TypeChecker implements ASTVisitor<Type> {
 	}
 
 	public void check(Program program) {
-		System.out.println("Starting comprehensive type checking with smart inference...");
+		// System.out.println("Starting comprehensive type checking with smart inference...");
 
 		try {
 			visitProgram(program);
-			System.out.println("Type checking completed successfully");
+			// System.out.println("Type checking completed successfully");
 		} catch (Exception e) {
 			errorCollector.addError(new CompilerError(
 					"Type checking failed: " + e.getMessage(),

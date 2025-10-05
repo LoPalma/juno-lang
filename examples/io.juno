@@ -1,7 +1,9 @@
 import Io;
 
+int five() {
+	return 5;
+}
+
 void main() {
-	string test = "56";
-	int x = int<test>;
-	Io.println(test);
+	Io.println("testing " ^^ string<five()>);
 }
