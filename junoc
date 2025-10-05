@@ -3,16 +3,38 @@
 # Usage: junoc [-j] <source-file.jl|.juno>
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-JAR_FILE="/home/palma/side-projects/clike-jvm-lang/target/juno-1.0.0-SNAPSHOT.jar"
-LIB_DIR="$SCRIPT_DIR/lib"
+
+# Detect if we're in development or installed mode
+if [ -f "$SCRIPT_DIR/../target/juno-1.0.0-SNAPSHOT.jar" ]; then
+  # Development mode
+  JAR_FILE="$SCRIPT_DIR/../target/juno-1.0.0-SNAPSHOT.jar"
+  LIB_DIR="$SCRIPT_DIR/../lib"
+elif [ -f "$SCRIPT_DIR/junoc-standalone.jar" ]; then
+  # Installed mode - standalone jar
+  JAR_FILE="$SCRIPT_DIR/junoc-standalone.jar"
+  LIB_DIR="$SCRIPT_DIR/lib"
+elif [ -f "$SCRIPT_DIR/juno.jar" ]; then
+  # Installed mode - regular jar
+  JAR_FILE="$SCRIPT_DIR/juno.jar"
+  LIB_DIR="$SCRIPT_DIR/lib"
+else
+  echo "Error: Juno compiler jar not found" >&2
+  echo "Searched in:" >&2
+  echo "  $SCRIPT_DIR/junoc-standalone.jar" >&2
+  echo "  $SCRIPT_DIR/juno.jar" >&2
+  echo "  $SCRIPT_DIR/../target/juno-1.0.0-SNAPSHOT.jar" >&2
+  exit 1
+fi
 
 # Build classpath with all ASM dependencies
 CLASSPATH="$JAR_FILE"
-for jar in "$LIB_DIR"/*.jar; do
+if [ -d "$LIB_DIR" ]; then
+  for jar in "$LIB_DIR"/*.jar; do
     if [[ -f "$jar" ]]; then
-        CLASSPATH="$CLASSPATH:$jar"
+      CLASSPATH="$CLASSPATH:$jar"
     fi
-done
+  done
+fi
 
 # Parse command line arguments
 GENERATE_JASMIN=false
@@ -21,64 +43,64 @@ SOURCE_FILE=""
 EXTRA_ARGS=()   # store flags to forward
 
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        -n|--no-class)
-            KEEP_CLASS=false
-            shift
-            ;;
-        -j|--jasmin)
-            GENERATE_JASMIN=true
-            shift
-            ;;
-        -a|--ast-dump)
-            # Forward as --ast-dump to the compiler
-            EXTRA_ARGS+=("--ast-dump")
-            shift
-            ;;
-        -h|--help)
-            echo "Juno Compiler (junoc)"
-            echo "Usage: junoc [-j] [-c] <source-file>"
-            echo ""
-            echo "Options:"
-            echo "  -c, --class     Generate JVM ByteCode (.class) files"
-            echo "  -j, --jasmin    Generate Jasmin assembly (.j) files"
-            echo "  -a, --ast-dump  Pretty print AST"
-            echo "  -h, --help      Show this help message"
-            echo ""
-            echo "Supported file extensions: .jl, .juno"
-            exit 0
-            ;;
-        -*)
-            # Unknown flags are forwarded as-is
-            EXTRA_ARGS+=("$1")
-            shift
-            ;;
-        *)
-            if [[ -z "$SOURCE_FILE" ]]; then
-                SOURCE_FILE="$1"
-            else
-                echo "Error: Multiple source files not supported" >&2
-                exit 1
-            fi
-            shift
-            ;;
-    esac
+  case $1 in
+    -n|--no-class)
+      KEEP_CLASS=false
+      shift
+      ;;
+    -j|--jasmin)
+      GENERATE_JASMIN=true
+      shift
+      ;;
+    -a|--ast-dump)
+      # Forward as --ast-dump to the compiler
+      EXTRA_ARGS+=("--ast-dump")
+      shift
+      ;;
+    -h|--help)
+      echo "Juno Compiler (junoc)"
+      echo "Usage: junoc [-j] [-n] <source-file>"
+      echo ""
+      echo "Options:"
+      echo "  -n, --no-class  Don't keep generated .class files"
+      echo "  -j, --jasmin    Generate Jasmin assembly (.j) files"
+      echo "  -a, --ast-dump  Pretty print AST"
+      echo "  -h, --help      Show this help message"
+      echo ""
+      echo "Supported file extensions: .jl, .juno"
+      exit 0
+      ;;
+    -*)
+      # Unknown flags are forwarded as-is
+      EXTRA_ARGS+=("$1")
+      shift
+      ;;
+    *)
+      if [[ -z "$SOURCE_FILE" ]]; then
+        SOURCE_FILE="$1"
+      else
+        echo "Error: Multiple source files not supported" >&2
+        exit 1
+      fi
+      shift
+      ;;
+  esac
 done
 
 if [[ -z "$SOURCE_FILE" ]]; then
-    echo "Error: No source file specified" >&2
-    echo "Usage: junoc [-j] <source-file>" >&2
-    exit 1
+  echo "Error: No source file specified" >&2
+  echo "Usage: junoc [-j] <source-file>" >&2
+  exit 1
 fi
 
 if [[ ! -f "$SOURCE_FILE" ]]; then
-    echo "Error: Source file '$SOURCE_FILE' not found" >&2
-    exit 1
+  echo "Error: Source file '$SOURCE_FILE' not found" >&2
+  exit 1
 fi
 
 # Set environment variable for Jasmin generation
 if [[ "$GENERATE_JASMIN" == true ]]; then
-    export JUNO_GENERATE_JASMIN=true
+  export JUNO_GENERATE_JASMIN=true
 fi
 
 SOURCE_BASE=$(basename "$SOURCE_FILE" .juno)
@@ -86,9 +108,12 @@ SOURCE_BASE=$(basename "$SOURCE_BASE" .jl)
 EXPECTED_CLASS="${SOURCE_BASE}.class"
 
 # Execute the compiler with forwarded extra arguments
-exec java -cp "$CLASSPATH" com.juno.Main "$SOURCE_FILE" "${EXTRA_ARGS[@]}"
+java -cp "$CLASSPATH" com.juno.Main "$SOURCE_FILE" "${EXTRA_ARGS[@]}"
+COMPILER_EXIT=$?
 
 # Clean up only our generated file if requested
 if [[ "$KEEP_CLASS" == false ]] && [[ -f "$EXPECTED_CLASS" ]]; then
-    rm -f "$EXPECTED_CLASS"
+  rm -f "$EXPECTED_CLASS"
 fi
+
+exit $COMPILER_EXIT

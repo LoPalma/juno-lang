@@ -72,7 +72,7 @@ OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 
 # Download latest release
 echo "Downloading Juno from GitHub..."
-RELEASE_URL="https://github.com/$REPO/releases/latest/download/juno-${OS}.tar.gz"
+RELEASE_URL="https://github.com/$REPO/releases/download/v0.3.0-alpha/juno-${OS}.tar.gz"
 
 curl -fsSL "$RELEASE_URL" -o /tmp/juno.tar.gz || {
   echo "Error: Failed to download Juno from $RELEASE_URL"
