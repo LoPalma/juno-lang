@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juno Programming Language</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #1D2D44;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 40px 20px;
+      color: #F0EBD8;
+      line-height: 1.6;
+    }
+
+    .pageoid {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #0D1321;
+      border-radius: 25px;
+      padding: 60px;
+      box-shadow: 0 0 60px rgba(116, 140, 171, 0.4),
+                  0 0 100px rgba(116, 140, 171, 0.2);
+    }
+
+    .hero-title {
+      font-size: 3.5em;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #F0EBD8;
+    }
+
+    .hero-subtitle {
+      font-size: 1.5em;
+      color: #748CAB;
+      margin-bottom: 50px;
+      font-weight: 300;
+    }
+
+    .section {
+      margin: 50px 0;
+      padding-top: 30px;
+      border-top: 2px solid #748CAB;
+    }
+
+    .section:first-of-type {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .section-title {
+      font-size: 2em;
+      margin-bottom: 20px;
+      color: #748CAB;
+    }
+
+    .section-content {
+      font-size: 1.1em;
+      color: #F0EBD8;
+      margin-bottom: 20px;
+    }
+
+    .code-box {
+      background: #1D2D44;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      position: relative;
+      border: 1px solid #748CAB;
+      overflow-x: auto;
+    }
+
+    .code-box pre {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95em;
+      color: #F0EBD8;
+      white-space: pre;
+    }
+
+    .copy-btn {
+      position: absolute;
+      right: 15px;
+      top: 15px;
+      background: #748CAB;
+      color: #0D1321;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9em;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .copy-btn:hover {
+      background: #8a9fb8;
+      transform: translateY(-2px);
+    }
+
+    .copy-btn:active {
+      transform: translateY(0);
+    }
+
+    .keyword { color: #748CAB; font-weight: bold; }
+    .string { color: #a8dadc; }
+    .comment { color: #6c757d; font-style: italic; }
+    .function { color: #f1faee; font-weight: bold; }
+    .type { color: #e63946; }
+    .number { color: #ffd166; }
+
+    @media (max-width: 768px) {
+      .pageoid {
+        padding: 30px;
+        border-radius: 20px;
+      }
+      
+      .hero-title {
+        font-size: 2.5em;
+      }
+      
+      .hero-subtitle {
+        font-size: 1.2em;
+      }
+      
+      .section-title {
+        font-size: 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="pageoid">
+    <!-- ==================== EDIT CONTENT HERE ==================== -->
+    
+    <!-- Main Title (always visible) -->
+    <h1 class="hero-title">Juno</h1>
+    
+    <!-- Subtitle (set to empty string to hide) -->
+    <p class="hero-subtitle">A modern programming language for the JVM</p>
+    
+    <!-- Section 1: Installation -->
+    <div class="section">
+      <h2 class="section-title">Installation</h2>
+      <p class="section-content">
+        Get started with Juno by running the installer:
+      </p>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this, 'curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh | bash')">Copy</button>
+        <pre>curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh | bash</pre>
+      </div>
+    </div>
+    
+    <!-- Section 2: Hello World Example -->
+    <div class="section">
+      <h2 class="section-title">Hello World</h2>
+      <p class="section-content">
+        Your first Juno program:
+      </p>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this, this.nextElementSibling.textContent.trim())">Copy</button>
+        <pre><span class="keyword">import</span> Io.{println};
+
+<span class="type">void</span> <span class="function">main</span>() {
+  Io.<span class="function">println</span>(<span class="string">"Hello, Juno!"</span>);
+}</pre>
+      </div>
+      <p class="section-content">
+        Run it with: <code style="background: #1D2D44; padding: 2px 8px; border-radius: 4px;">juno run hello.juno</code>
+      </p>
+    </div>
+    
+    <!-- Section 3: Features -->
+    <div class="section">
+      <h2 class="section-title">Features</h2>
+      <p class="section-content">
+        • Compiles to JVM bytecode<br>
+        • Modern syntax<br>
+        • Easy to learn<br>
+        • Lightweight and fast
+      </p>
+    </div>
+    
+    <!-- REUSABLE SECTION TEMPLATE -->
+    <!--
+    <div class="section">
+      <h2 class="section-title">Your Section Title</h2>
+      <p class="section-content">
+        Your content here...
+      </p>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this, this.nextElementSibling.textContent.trim())">Copy</button>
+        <pre>Your code here</pre>
+      </div>
+    </div>
+    -->
+    
+    <!-- ======================================== -->
+  </div>
+
+  <script>
+    function copyCode(button, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.style.background = '#a8dadc';
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.style.background = '#748CAB';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
