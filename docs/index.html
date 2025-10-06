@@ -12,41 +12,45 @@
     }
 
     body {
-      background: #1D2D44;
+      background: #02182B;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       padding: 40px 20px;
-      color: #F0EBD8;
+      color: #E1F2FE;
       line-height: 1.6;
+      display: flex;
+      justify-content: center;
     }
 
     .pageoid {
-      max-width: 900px;
+      width: 100%;
+      max-width: 1600px; /* doubled width */
       margin: 0 auto;
-      background: #0D1321;
-      border-radius: 25px;
-      padding: 60px;
-      box-shadow: 0 0 60px rgba(116, 140, 171, 0.4),
-                  0 0 100px rgba(116, 140, 171, 0.2);
+      background: #02182B;
+      border-radius: 35px;
+      padding: 80px;
+      box-shadow: 0 0 80px rgba(225, 242, 254, 0.2),
+                  0 0 120px rgba(225, 242, 254, 0.1);
+      transition: width 0.3s ease;
     }
 
     .hero-title {
-      font-size: 3.5em;
-      font-weight: 700;
+      font-size: 4em;
+      font-weight: 800;
       margin-bottom: 20px;
-      color: #F0EBD8;
+      color: #E1F2FE;
     }
 
     .hero-subtitle {
-      font-size: 1.5em;
-      color: #748CAB;
-      margin-bottom: 50px;
-      font-weight: 300;
+      font-size: 1.8em;
+      color: #E1F2FE;
+      margin-bottom: 60px;
+      font-weight: 400;
     }
 
     .section {
-      margin: 50px 0;
-      padding-top: 30px;
-      border-top: 2px solid #748CAB;
+      margin: 60px 0;
+      padding-top: 40px;
+      border-top: 2px solid #E1F2FE;
     }
 
     .section:first-of-type {
@@ -55,32 +59,33 @@
     }
 
     .section-title {
-      font-size: 2em;
+      font-size: 2.4em;
       margin-bottom: 20px;
-      color: #748CAB;
+      color: #E1F2FE;
+      font-weight: 700;
     }
 
     .section-content {
-      font-size: 1.1em;
-      color: #F0EBD8;
+      font-size: 1.2em;
+      color: #E1F2FE;
       margin-bottom: 20px;
     }
 
     .code-box {
-      background: #1D2D44;
+      background: #02182B;
       border-radius: 12px;
-      padding: 20px;
-      margin: 20px 0;
+      padding: 25px;
+      margin: 25px 0;
       position: relative;
-      border: 1px solid #748CAB;
+      border: 1px solid #E1F2FE;
       overflow-x: auto;
     }
 
     .code-box pre {
       margin: 0;
       font-family: 'Courier New', monospace;
-      font-size: 0.95em;
-      color: #F0EBD8;
+      font-size: 1em;
+      color: #E1F2FE;
       white-space: pre;
     }
 
@@ -88,8 +93,8 @@
       position: absolute;
       right: 15px;
       top: 15px;
-      background: #748CAB;
-      color: #0D1321;
+      background: #E1F2FE;
+      color: #02182B;
       border: none;
       padding: 8px 16px;
       border-radius: 6px;
@@ -100,7 +105,7 @@
     }
 
     .copy-btn:hover {
-      background: #8a9fb8;
+      background: #ffffff;
       transform: translateY(-2px);
     }
 
@@ -108,56 +113,58 @@
       transform: translateY(0);
     }
 
-    .keyword { color: #748CAB; font-weight: bold; }
-    .string { color: #a8dadc; }
-    .comment { color: #6c757d; font-style: italic; }
-    .function { color: #f1faee; font-weight: bold; }
-    .type { color: #e63946; }
-    .number { color: #ffd166; }
+    /* Syntax Highlighting */
+    .keyword { color: #92C6F8; font-weight: bold; } /* All keywords except types */
+    .type { color: #FFFFB6; font-weight: bold; } /* Types */
+    .string { color: #86CA4F; } /* Strings & chars */
+    .number { color: #FF73FD; } /* Numbers */
+    .comment { color: #6C757D; font-style: italic; }
+    .function { color: #E1F2FE; font-weight: bold; }
+
+    @media (max-width: 1200px) {
+      .pageoid {
+        padding: 60px;
+        max-width: 1000px;
+      }
+    }
 
     @media (max-width: 768px) {
       .pageoid {
-        padding: 30px;
-        border-radius: 20px;
+        padding: 40px;
+        border-radius: 25px;
+        max-width: 90%;
       }
       
       .hero-title {
-        font-size: 2.5em;
+        font-size: 2.8em;
       }
       
       .hero-subtitle {
-        font-size: 1.2em;
+        font-size: 1.3em;
       }
       
       .section-title {
-        font-size: 1.5em;
+        font-size: 1.8em;
       }
     }
   </style>
 </head>
 <body>
   <div class="pageoid">
-    <!-- ==================== EDIT CONTENT HERE ==================== -->
-    
-    <!-- Main Title (always visible) -->
     <h1 class="hero-title">Juno</h1>
-    
-    <!-- Subtitle (set to empty string to hide) -->
     <p class="hero-subtitle">A modern programming language for the JVM</p>
-    
-    <!-- Section 1: Installation -->
+
     <div class="section">
       <h2 class="section-title">Installation</h2>
       <p class="section-content">
         Get started with Juno by running the installer:
       </p>
       <div class="code-box">
-        <button class="copy-btn" onclick="copyCode(this, 'curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh | bash')">Copy</button>
-        <pre>curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh | bash</pre>
+        <button class="copy-btn" onclick="copyCode(this, 'bash <(curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh)')">Copy</button>
+        <pre>bash <(curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh)</pre>
       </div>
     </div>
-    
-    <!-- Section 2: Hello World Example -->
+
     <div class="section">
       <h2 class="section-title">Hello World</h2>
       <p class="section-content">
@@ -172,11 +179,10 @@
 }</pre>
       </div>
       <p class="section-content">
-        Run it with: <code style="background: #1D2D44; padding: 2px 8px; border-radius: 4px;">juno run hello.juno</code>
+        Run it with: <code style="background: #02182B; padding: 2px 8px; border-radius: 4px;">juno run hello.juno</code>
       </p>
     </div>
-    
-    <!-- Section 3: Features -->
+
     <div class="section">
       <h2 class="section-title">Features</h2>
       <p class="section-content">
@@ -186,22 +192,6 @@
         • Lightweight and fast
       </p>
     </div>
-    
-    <!-- REUSABLE SECTION TEMPLATE -->
-    <!--
-    <div class="section">
-      <h2 class="section-title">Your Section Title</h2>
-      <p class="section-content">
-        Your content here...
-      </p>
-      <div class="code-box">
-        <button class="copy-btn" onclick="copyCode(this, this.nextElementSibling.textContent.trim())">Copy</button>
-        <pre>Your code here</pre>
-      </div>
-    </div>
-    -->
-    
-    <!-- ======================================== -->
   </div>
 
   <script>
@@ -209,10 +199,10 @@
       navigator.clipboard.writeText(text).then(() => {
         const originalText = button.textContent;
         button.textContent = 'Copied!';
-        button.style.background = '#a8dadc';
+        button.style.background = '#86CA4F';
         setTimeout(() => {
           button.textContent = originalText;
-          button.style.background = '#748CAB';
+          button.style.background = '#E1F2FE';
         }, 2000);
       });
     }
