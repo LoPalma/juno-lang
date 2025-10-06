@@ -18,30 +18,67 @@
       color: #E1F2FE;
       line-height: 1.6;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
     }
 
+    /* ===== Top Title ===== */
+    .main-title {
+      font-size: 5em;
+      font-weight: 900;
+      color: #E1F2FE;
+      text-align: center;
+      margin-bottom: 50px;
+      letter-spacing: 2px;
+    }
+
+    /* ===== GitHub Corner ===== */
+    .github-corner {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 80px;
+      height: 80px;
+      background: #02182B;
+      clip-path: polygon(100% 0, 0 0, 100% 100%);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 12px;
+      z-index: 1000;
+      transition: background 0.3s;
+    }
+
+    .github-corner:hover {
+      background: #092b4b;
+    }
+
+    .github-corner img {
+      width: 30px;
+      height: 30px;
+      filter: invert(91%) sepia(11%) saturate(267%) hue-rotate(180deg) brightness(106%) contrast(99%);
+    }
+
+    /* ===== Page Container ===== */
     .pageoid {
       width: 100%;
-      max-width: 1600px; /* doubled width */
-      margin: 0 auto;
+      max-width: 1600px;
       background: #02182B;
       border-radius: 35px;
       padding: 80px;
       box-shadow: 0 0 80px rgba(225, 242, 254, 0.2),
                   0 0 120px rgba(225, 242, 254, 0.1);
-      transition: width 0.3s ease;
     }
 
     .hero-title {
-      font-size: 4em;
+      font-size: 3em;
       font-weight: 800;
       margin-bottom: 20px;
       color: #E1F2FE;
     }
 
     .hero-subtitle {
-      font-size: 1.8em;
+      font-size: 1.5em;
       color: #E1F2FE;
       margin-bottom: 60px;
       font-weight: 400;
@@ -63,6 +100,7 @@
       margin-bottom: 20px;
       color: #E1F2FE;
       font-weight: 700;
+      text-align: left;
     }
 
     .section-content {
@@ -71,6 +109,7 @@
       margin-bottom: 20px;
     }
 
+    /* ===== Code Boxes ===== */
     .code-box {
       background: #02182B;
       border-radius: 12px;
@@ -114,62 +153,76 @@
     }
 
     /* Syntax Highlighting */
-    .keyword { color: #92C6F8; font-weight: bold; } /* All keywords except types */
-    .type { color: #FFFFB6; font-weight: bold; } /* Types */
-    .string { color: #86CA4F; } /* Strings & chars */
-    .number { color: #FF73FD; } /* Numbers */
+    .keyword { color: #92C6F8; font-weight: bold; }
+    .type { color: #FFFFB6; font-weight: bold; }
+    .string { color: #86CA4F; }
+    .number { color: #FF73FD; }
     .comment { color: #6C757D; font-style: italic; }
     .function { color: #E1F2FE; font-weight: bold; }
 
-    @media (max-width: 1200px) {
-      .pageoid {
-        padding: 60px;
-        max-width: 1000px;
-      }
+    /* ===== New Feature Layout ===== */
+    .feature-pair {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 50px;
+      flex-wrap: wrap;
+      margin-top: 40px;
+    }
+
+    .feature-text {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .feature-code {
+      flex: 1;
+      min-width: 300px;
     }
 
     @media (max-width: 768px) {
+      .main-title {
+        font-size: 3em;
+      }
+
       .pageoid {
         padding: 40px;
         border-radius: 25px;
         max-width: 90%;
       }
-      
-      .hero-title {
-        font-size: 2.8em;
-      }
-      
-      .hero-subtitle {
-        font-size: 1.3em;
-      }
-      
-      .section-title {
-        font-size: 1.8em;
+
+      .feature-pair {
+        flex-direction: column;
       }
     }
   </style>
 </head>
 <body>
+  <a class="github-corner" href="https://github.com/LoPalma/juno-lang" target="_blank" title="View on GitHub">
+    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/github.svg" alt="GitHub">
+  </a>
+
+  <h1 class="main-title">Juno</h1>
+
   <div class="pageoid">
-    <h1 class="hero-title">Juno</h1>
     <p class="hero-subtitle">A modern programming language for the JVM</p>
 
+    <!-- Installation -->
     <div class="section">
       <h2 class="section-title">Installation</h2>
       <p class="section-content">
         Get started with Juno by running the installer:
       </p>
       <div class="code-box">
-        <button class="copy-btn" onclick="copyCode(this, 'bash <(curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/master/install.sh)')">Copy</button>
-        <pre>bash <(curl -fsSL https://raw.githubusercontent.com/2LoPalma/juno-lang/master/install.sh)</pre>
+        <button class="copy-btn" onclick="copyCode(this, 'bash <(curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh)')">Copy</button>
+        <pre>bash <(curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh)</pre>
       </div>
     </div>
 
+    <!-- Hello World -->
     <div class="section">
       <h2 class="section-title">Hello World</h2>
-      <p class="section-content">
-        Your first Juno program:
-      </p>
+      <p class="section-content">Your first Juno program:</p>
       <div class="code-box">
         <button class="copy-btn" onclick="copyCode(this, this.nextElementSibling.textContent.trim())">Copy</button>
         <pre><span class="keyword">import</span> Io.{println};
@@ -183,15 +236,79 @@
       </p>
     </div>
 
+    <!-- Feature 1 -->
     <div class="section">
-      <h2 class="section-title">Features</h2>
-      <p class="section-content">
-        • Compiles to JVM bytecode<br>
-        • Modern syntax<br>
-        • Easy to learn<br>
-        • Lightweight and fast
-      </p>
+      <div class="feature-pair">
+        <div class="feature-text">
+          <h2 class="section-title">Old look, new feel</h2>
+          <p class="section-content">
+            Juno’s syntax will feel familiar to C programmers, but it’s designed to go far beyond.  
+            With support for variant types, pattern-like flexibility, and simpler semantics,  
+            Juno combines the elegance of modern languages with the performance of native code.
+          </p>
+        </div>
+        <div class="feature-code">
+          <div class="code-box">
+            <pre><span class="keyword">import</span> Io;
+
+<span class="type">void</span> <span class="function">main</span>() {
+  <span class="type">string</span>|<span class="type">int</span> x = <span class="number">0</span>; <span class="comment">// integer</span>
+  x = <span class="string">"string"</span>; <span class="comment">// string</span>
+}</pre>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Feature 2 -->
+    <div class="section">
+      <div class="feature-pair">
+        <div class="feature-text">
+          <h2 class="section-title">Slimware oriented</h2>
+          <p class="section-content">
+            In Juno, modules replace the heavy class systems of other languages.  
+            You import functionality directly and operate on your data without boilerplate.  
+            It’s cleaner, lighter, and more modular—perfect for Slimware development.
+          </p>
+        </div>
+        <div class="feature-code">
+          <div class="code-box">
+            <pre><span class="keyword">import</span> String;
+<span class="keyword">import</span> Io;
+
+<span class="type">void</span> <span class="function">main</span>() {
+  <span class="type">string</span> hi = <span class="string">"hi!"</span>;
+  <span class="type">int</span> len = String.<span class="function">length</span>(hi);
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3 -->
+    <div class="section">
+      <div class="feature-pair">
+        <div class="feature-text">
+          <h2 class="section-title">Modern tools</h2>
+          <p class="section-content">
+            Juno’s compiler is simple yet powerful.  
+            Run your program directly with <code>juno run</code> or export clean Jasmin bytecode.  
+            You can even execute Juno-generated classes with Java itself—no setup, no pain.
+          </p>
+        </div>
+        <div class="feature-code">
+          <div class="code-box">
+            <pre><span class="comment"># bash</span>
+$ juno build hello.juno -j
+$ juno exec hello
+Hello, World!
+
+$ java -cp "/bin/juno/lib" hello</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -209,4 +326,3 @@
   </script>
 </body>
 </html>
-<!-- v2  -->
