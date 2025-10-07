@@ -80,7 +80,7 @@ body {
   background: var(--bg-pageoid);
   border-radius: 25px;
   padding: 80px;
-  box-shadow: 0 0 40px rgba(#84ba6499),
+  box-shadow: 0 0 40px rgba(#84ba6499);
               0 0 60px rgba(#84ba6477);
 }
 
