@@ -3,37 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Juno Docs</title>
+  <title>Juno Language</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 class="main-title">Juno Docs</h1>
-  <p class="hero-subtitle">Learn Juno step by step, from basics to mastery</p>
 
+  <!-- GitHub Corner -->
+  <a href="https://github.com/your-repo" class="github-corner" target="_blank" title="View on GitHub">
+    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/github.svg" alt="GitHub Logo">
+  </a>
+
+  <!-- Main Title -->
+  <h1 class="main-title">Juno</h1>
+
+  <!-- Main Pageoid -->
   <div class="pageoid">
-    <div class="section">
-      <h2 class="section-title">Get Started</h2>
-      <p class="section-content">
-        Begin your journey with Juno — learn how to install, set up, and run your first program.
-      </p>
-      <a class="link-btn" href="/juno-lang/docs/get-started">Go to Get Started</a>
-    </div>
 
-    <div class="section">
-      <h2 class="section-title">Learn</h2>
-      <p class="section-content">
-        Explore tutorials and guides to understand Juno’s core concepts and real-world examples.
-      </p>
-      <a class="link-btn" href="/juno-lang/docs/learn">Go to Learn</a>
-    </div>
+    <!-- Feature 1 -->
+    <section class="feature">
+      <div class="feature-text">
+        <h2 class="feature-title">Old look, new feel</h2>
+        <p class="feature-desc">
+          Juno brings a familiar, C-like syntax but adds a modern twist. With variant types, pattern matching, and powerful module systems, you can write expressive, type-safe code without losing the simplicity that makes C iconic.
+        </p>
+      </div>
 
-    <div class="section">
-      <h2 class="section-title">Language Reference</h2>
-      <p class="section-content">
-        Dive deep into the language syntax, semantics, and standard library functions.
-      </p>
-      <a class="link-btn" href="/juno-lang/docs/reference">Go to Reference</a>
-    </div>
+      <pre><code>
+<span class="kwd">import</span> <span class="type">Io</span>;
+
+<span class="kwd">void</span> <span class="kwd">main</span>() {
+  <span class="type">string|int</span> x = <span class="num">0</span>; <span class="str">// integer</span>
+  x = <span class="str">"string"</span>; <span class="str">// string</span>
+}
+      </code></pre>
+    </section>
+
+    <!-- Feature 2 -->
+    <section class="feature">
+      <div class="feature-text">
+        <h2 class="feature-title">Slimware oriented</h2>
+        <p class="feature-desc">
+          In Juno, everything is modular. Instead of using heavy class hierarchies, you work with lightweight modules for data and behavior. This design makes Juno ideal for slim, fast, and minimal applications — perfect for embedded or high-performance environments.
+        </p>
+      </div>
+
+      <pre><code>
+<span class="kwd">import</span> <span class="type">String</span>;
+<span class="kwd">import</span> <span class="type">Io</span>;
+
+<span class="kwd">void</span> <span class="kwd">main</span>() {
+  <span class="type">string</span> hi = <span class="str">"hi!"</span>;
+  <span class="type">int</span> len = <span class="type">String</span>.length(hi);
+}
+      </code></pre>
+    </section>
+
+    <!-- Feature 3 -->
+    <section class="feature">
+      <div class="feature-text">
+        <h2 class="feature-title">Modern tools</h2>
+        <p class="feature-desc">
+          Juno’s compiler is built for clarity. No cryptic build commands — just <code>juno run file</code>. You can generate <code>.j</code> files for the JVM or run programs directly. It’s clean, intuitive, and ready for real-world development.
+        </p>
+      </div>
+
+      <pre><code>
+$ <span class="kwd">juno</span> build hello.juno -j
+$ <span class="kwd">juno</span> exec hello
+<span class="str">Hello, World!</span>
+
+$ <span class="kwd">java</span> -cp "/bin/juno/lib" hello
+      </code></pre>
+    </section>
   </div>
 </body>
 </html>
