@@ -80,8 +80,8 @@ body {
   background: var(--bg-pageoid);
   border-radius: 25px;
   padding: 80px;
-  box-shadow: 0 0 60px rgba(116, 140, 171, 0.4),
-              0 0 100px rgba(116, 140, 171, 0.2);
+  box-shadow: 0 0 40px rgba(#84ba6499),
+              0 0 60px rgba(#84ba6477);
 }
 
 /* ==================== NAVIGATION ==================== */
