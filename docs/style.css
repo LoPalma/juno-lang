@@ -1,0 +1,177 @@
+/* General page styling */
+body {
+    background-color: #160c28;
+    color: #e1efe6;
+    font-family: 'Fira Code', monospace;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+/* Page container */
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    color: #efcb68;
+    font-weight: 600;
+}
+
+/* Links */
+a {
+    color: #64b5f6;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* Code blocks */
+pre, code {
+    background-color: #1c1436;
+    color: #e1efe6;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.95em;
+}
+
+/* Inline code */
+code {
+    padding: 2px 4px;
+    border-radius: 4px;
+    background-color: #1c1436;
+}
+
+/* Syntax highlighting */
+.token.keyword {
+    color: #efcb68;
+    font-weight: 500;
+}
+.token.operator {
+    color: #f4a261;
+}
+.token.comment {
+    color: #a3988f;
+    font-style: italic;
+}
+.token.string {
+    color: #ffcb6b;
+}
+.token.number {
+    color: #7fcdbb;
+}
+.token.function {
+    color: #8ac6f2;
+}
+.token.variable {
+    color: #e1efe6;
+}
+.token.constant {
+    color: #ff8c8c;
+}
+
+/* Blocks & sections */
+section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #1c1436;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #00000055;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+table th, table td {
+    padding: 10px;
+    border: 1px solid #333;
+}
+table th {
+    background-color: #2a1f3b;
+    color: #efcb68;
+}
+
+/* Lists */
+ul, ol {
+    margin-left: 20px;
+}
+li {
+    margin-bottom: 6px;
+}
+
+/* Buttons */
+button {
+    background-color: #efcb68;
+    color: #160c28;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+button:hover {
+    background-color: #ffd166;
+}
+
+/* Forms */
+input, textarea, select {
+    background-color: #1c1436;
+    color: #e1efe6;
+    border: 1px solid #333;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+input:focus, textarea:focus, select:focus {
+    outline: 2px solid #efcb68;
+}
+
+/* Blockquotes */
+blockquote {
+    border-left: 4px solid #efcb68;
+    padding-left: 10px;
+    color: #a3988f;
+    font-style: italic;
+    margin: 10px 0;
+}
+
+/* Horizontal rule */
+hr {
+    border: 0;
+    height: 1px;
+    background-color: #333;
+}
+
+/* Miscellaneous highlights */
+.highlight {
+    background-color: #333;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #1c1436;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #444;
+    border-radius: 5px;
+    border: 2px solid #1c1436;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 20px;
+    color: #a3988f;
+    background-color: #1c1436;
+    margin-top: 40px;
+}
