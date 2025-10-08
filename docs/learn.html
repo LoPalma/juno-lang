@@ -91,8 +91,8 @@
         Juno is <strong>strongly typed</strong> with strict type enforcement. There are no implicit conversions — if you want to mix types, you must be explicit:
       </p>
 
-      <pre><code><span class="type">int</span> x = <span class="num">2</span> / <span class="num">3.0</span>;  <span class="comment">// Error: type mismatch</span>
-<span class="type">int</span> y = <span class="kwd">int</span>&lt;<span class="num">2</span> / <span class="num">3.0</span>&gt;;  <span class="comment">// OK: explicit cast</span></code></pre>
+      <pre><code><span class="type">float</span> x = <span class="num">2</span> / <span class="num">3.0</span>;  <span class="comment">// Error: type mismatch</span>
+<span class="type">float</span> y = <span class="kwd">float</span>&lt;<span class="num">2</span>&gt; / <span class="num">3.0</span>;;  <span class="comment">// OK: explicit cast</span></code></pre>
 
       <p class="feature-desc">
         This strictness catches bugs at compile time. No silent truncation, no mysterious runtime behavior. If your types don't match, Juno tells you immediately.
