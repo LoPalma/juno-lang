@@ -25,7 +25,7 @@ void main() {
 
 This design provides memory efficiency by importing functionality once per module rather than carrying method tables with every data instance.
 
-## Current Status: v1.0.0-alpha
+## Current Status: v0.3.0-alpha
 
 ⚠️ **Alpha Software**: Juno is in active development. Some features work reliably, others are still being debugged.
 
@@ -52,7 +52,6 @@ Juno supports a rich type system including:
 - **Primitives**: `byte`, `short`, `int`, `long`, `ubyte`, `ushort`, `uint`, `ulong`, `float`, `double`, `char`, `string`, `bool`
 - **Special types**: `void`, `auto`, `any`
 - **Advanced types**: `optional T`, union types with `|`, pointers
-- **Type aliases**: `type MyInt = int;`
 
 ### Module System
 ```c
@@ -68,19 +67,20 @@ int length = String.length("test");
 ### Control Flow
 ```c
 // If statements
-if (condition) {
+if condition {
     // code
 } else {
     // alternative
 }
 
 // While loops
-while (condition) {
+while condition {
     // loop body
 }
 
 // For-in loops  
-for (int i in range) {
+// currently not working
+for int i in range {
     // iterate
 }
 ```

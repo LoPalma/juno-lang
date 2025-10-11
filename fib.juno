@@ -1,0 +1,13 @@
+import Io;
+
+uint fib(int n) {
+	if n < 2 {
+		return uint<n>;
+	}
+	return fib(n-1) + fib(n-2);
+}
+
+void main() {
+	ushort n = 6;
+	Io.println("fib("^^string<n>^^") = "^^string<fib(n)>);
+}
