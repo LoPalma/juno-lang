@@ -782,51 +782,43 @@ public class TypeChecker implements ASTVisitor<Type> {
 			return null;
 		}
 
-		switch (operator) {
+		return switch (operator) {
 			// Arithmetic operators
-			case "+":
-			case "-":
-			case "*":
-			case "/":
-			case "%":
-				return getArithmeticResultType(leftType, rightType);
+			case "+", "-", "*", "/", "%" -> getArithmeticResultType(leftType, rightType);
 
 			// Comparison operators
-			case "<":
-			case "<=":
-			case ">":
-			case ">=":
+			case "<", "<=", ">", ">=" -> {
 				if (isNumericCompatible(leftType, rightType)) {
-					return PrimitiveType.BOOL;
+					yield PrimitiveType.BOOL;
 				}
-				return null;
+				yield null;
+			}
 
 			// Equality operators
-			case "==":
-			case "!=":
+			case "==", "!=" -> {
 				if (isCompatible(leftType, rightType) || isCompatible(rightType, leftType)) {
-					return PrimitiveType.BOOL;
+					yield PrimitiveType.BOOL;
 				}
-				return null;
+				yield null;
+			}
 
 			// Logical operators
-			case "&&":
-			case "||":
+			case "&&", "||" -> {
 				if (isCompatible(leftType, PrimitiveType.BOOL) && isCompatible(rightType, PrimitiveType.BOOL)) {
-					return PrimitiveType.BOOL;
+					yield PrimitiveType.BOOL;
 				}
-				return null;
+				yield null;
+			}
 
 			// String concatenation
-			case "^^":
+			case "^^" -> {
 				if (isCompatible(leftType, PrimitiveType.STRING) || isCompatible(rightType, PrimitiveType.STRING)) {
-					return PrimitiveType.STRING;
+					yield PrimitiveType.STRING;
 				}
-				return null;
-
-			default:
-				return null;
-		}
+				yield null;
+			}
+			default -> null;
+		};
 	}
 
 	/**
