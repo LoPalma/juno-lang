@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+
+VERSION="0.3.1-alpha"
+
 HELLO='import Io.{println};
 void main() {
   Io.println("Hello, Juno!");
@@ -67,7 +70,7 @@ case "$COMMAND" in
     
     if [ -d "$PROJECT_DIR" ]; then
       if [ -z "$(find "$PROJECT_DIR" -mindepth 1 -print -quit)" ]; then
-        cd "$PROJECT_DIR"
+        cd "$PROJECT_DIR" || exit
       else
         echo "Directory specified exists and is not empty"
         exit 1
@@ -82,13 +85,13 @@ case "$COMMAND" in
     echo "Creating project manifest..."
     echo ""
     printf "Module name: "
-    read name
+    read -r name
     printf "Module version (0.0.1): "
-    read version
+    read -r version
     printf "Module description: "
-    read desc
+    read -r desc
     printf "Module author ($USER): "
-    read author
+    read -r author
     
     # Apply defaults
     name=${name:-$DEF_NAME}
@@ -186,7 +189,10 @@ case "$COMMAND" in
     
     java -cp ".:$JUNO_CLASSES" "$CLASSNAME" "$@"
     ;;
-    
+
+  version)
+    echo "Juno version ($VERSION), (C) 2025 Leonardo Palma"
+    ;;
   *)
     echo "Unknown command: $COMMAND"
     show_help

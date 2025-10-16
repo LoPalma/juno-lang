@@ -22,8 +22,6 @@ public class Main {
 
 	public static void main(String[] args) {
 
-		final String version = "v0.3.1-alpha";
-
 		if (args.length < 1) {
 			System.err.println("Invalid amount of arguments");
 			System.exit(1);
@@ -38,9 +36,6 @@ public class Main {
 			}
 			if ("--verbose".equals(arg) || "-v".equals(arg)) {
 				verbose = true;
-			}
-			if ("--version".equals(arg)) {
-				System.out.println("Juno Language " + version + ", 10/2025 (C) Leonardo Palma");
 			}
 		}
 
