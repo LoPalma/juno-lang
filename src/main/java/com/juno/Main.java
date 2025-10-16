@@ -19,7 +19,11 @@ import java.nio.file.Paths;
  * Main entry point for the C-like JVM language compiler/interpreter.
  */
 public class Main {
+
 	public static void main(String[] args) {
+
+		final String version = "v0.3.1-alpha";
+
 		if (args.length < 1) {
 			System.err.println("Invalid amount of arguments");
 			System.exit(1);
@@ -34,6 +38,9 @@ public class Main {
 			}
 			if ("--verbose".equals(arg) || "-v".equals(arg)) {
 				verbose = true;
+			}
+			if ("--version".equals(arg)) {
+				System.out.println("Juno Language " + version + ", 10/2025 (C) Leonardo Palma");
 			}
 		}
 
@@ -91,7 +98,7 @@ public class Main {
 
 		Parser parser = new Parser(tokens, sourceFile, sourceLines, errorCollector);
 		Program program = parser.parseProgram();
-		if (verbose) System.out.println("Parsed program with " + program.getStatements().size() + " statements");
+		if (verbose) System.out.println("Parsed " + program.getStatements().size() + " statements");
 
 		// Print AST if debug flag is enabled
 		if (debugAST) {
