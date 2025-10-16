@@ -191,7 +191,7 @@ case "$COMMAND" in
     ;;
 
   version)
-    echo "Juno version ($VERSION), (C) 2025 Leonardo Palma"
+    echo "Juno version $VERSION, (C) 2025 Leonardo Palma"
     ;;
   *)
     echo "Unknown command: $COMMAND"
