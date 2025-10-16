@@ -193,6 +193,11 @@ case "$COMMAND" in
   version)
     echo "Juno version $VERSION, (C) 2025 Leonardo Palma"
     ;;
+
+  update)
+    bash <(curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/master/install.sh)
+    ;;
+
   *)
     echo "Unknown command: $COMMAND"
     show_help
