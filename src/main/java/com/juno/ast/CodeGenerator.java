@@ -968,32 +968,17 @@ public class CodeGenerator implements ASTVisitor<Void> {
 
 	private String getJVMTypeDescriptor(com.juno.types.Type type) {
 		if (type instanceof PrimitiveType) {
-			switch (type.getName()) {
-				case "void":
-					return "V";
-				case "bool":
-					return "Z";
-				case "byte":
-				case "ubyte":
-				case "short":
-				case "ushort":
-				case "int":
-				case "uint":
-					return "I";  // Use int for all small integer types
-				case "long":
-				case "ulong":
-					return "J";
-				case "float":
-					return "F";
-				case "double":
-					return "D";
-				case "char":
-					return "C";
-				case "string":
-					return "Ljava/lang/String;";
-				default:
-					throw new UnsupportedOperationException("Unsupported primitive type: " + type.getName());
-			}
+			return switch (type.getName()) {
+				case "void" -> "V";
+				case "bool" -> "Z";
+				case "byte", "ubyte", "short", "ushort", "int", "uint" -> "I";  // Use int for all small integer types
+				case "long", "ulong" -> "J";
+				case "float" -> "F";
+				case "double" -> "D";
+				case "char" -> "C";
+				case "string" -> "Ljava/lang/String;";
+				default -> throw new UnsupportedOperationException("Unsupported primitive type: " + type.getName());
+			};
 		}
 		else if (type instanceof ArrayType) {
 			return type.getJVMDescriptor();

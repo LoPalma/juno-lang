@@ -126,8 +126,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 			isInitialized = true;
 
 			// Handle auto type inference
-			if (declaredType instanceof SpecialTypes.AutoType) {
-				SpecialTypes.AutoType autoType = (SpecialTypes.AutoType) declaredType;
+			if (declaredType instanceof SpecialTypes.AutoType autoType) {
 				if (initType != null && !initType.getName().equals("void")) {
 					autoType.inferType(initType);
 					finalType = initType;
@@ -481,9 +480,8 @@ public class TypeChecker implements ASTVisitor<Type> {
 		}
 
 		// Handle special 'any' type assignment
-		if (targetType instanceof SpecialTypes.AnyType && expr.getTarget() instanceof IdentifierExpression) {
+		if (targetType instanceof SpecialTypes.AnyType && expr.getTarget() instanceof IdentifierExpression target) {
 			// Update symbol table with new type for 'any' variables
-			IdentifierExpression target = (IdentifierExpression) expr.getTarget();
 			symbolTable.updateSymbolType(target.getName(), valueType);
 			symbolTable.markInitialized(target.getName());
 		}
@@ -566,16 +564,11 @@ public class TypeChecker implements ASTVisitor<Type> {
 	}
 
 	private Type resolveIoFunction(String function) {
-		switch (function) {
-			case "print":
-			case "println":
-			case "report":
-				return PrimitiveType.VOID;
-			case "scan":
-				return PrimitiveType.STRING;
-			default:
-				return PrimitiveType.VOID;
-		}
+		return switch (function) {
+			case "print", "println", "report" -> PrimitiveType.VOID;
+			case "scan" -> PrimitiveType.STRING;
+			default -> PrimitiveType.VOID;
+		};
 	}
 
 	@Override
@@ -644,7 +637,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 		Type indexType = expr.getIndex().accept(this);
 
 		// Check that the array expression is actually an array type
-		if (!(arrayType instanceof ArrayType)) {
+		if (!(arrayType instanceof ArrayType array)) {
 			errorCollector.addError(new CompilerError(
 					"Cannot index non-array type: " + arrayType,
 					ErrorCode.TYPE_MISMATCH,
@@ -662,7 +655,6 @@ public class TypeChecker implements ASTVisitor<Type> {
 			));
 		}
 
-		ArrayType array = (ArrayType) arrayType;
 		Type elementType = array.getElementType();
 		expr.setType(elementType);
 		return elementType;
@@ -703,7 +695,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 		Type operandType = expr.getOperand().accept(this);
 
 		// Check that operand is a pointer type
-		if (!(operandType instanceof PointerType)) {
+		if (!(operandType instanceof PointerType pointerType)) {
 			errorCollector.addError(new CompilerError(
 					"Cannot dereference non-pointer type: " + operandType,
 					ErrorCode.TYPE_ERROR,
@@ -712,7 +704,6 @@ public class TypeChecker implements ASTVisitor<Type> {
 			return PrimitiveType.INT; // fallback
 		}
 
-		PointerType pointerType = (PointerType) operandType;
 		Type pointedType = pointerType.getPointedType();
 		expr.setType(pointedType);
 		return pointedType;
@@ -743,9 +734,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 		}
 
 		// Special handling for numeric type coercion
-		if (fromType instanceof PrimitiveType && toType instanceof PrimitiveType) {
-			PrimitiveType fromPrim = (PrimitiveType) fromType;
-			PrimitiveType toPrim = (PrimitiveType) toType;
+		if (fromType instanceof PrimitiveType fromPrim && toType instanceof PrimitiveType toPrim) {
 
 			// Allow numeric narrowing conversions for literals
 			if (fromPrim.isNumeric() && toPrim.isNumeric()) {
@@ -771,15 +760,13 @@ public class TypeChecker implements ASTVisitor<Type> {
 		}
 
 		// Optional types can accept their wrapped type or null
-		if (toType instanceof OptionalType) {
-			OptionalType optType = (OptionalType) toType;
+		if (toType instanceof OptionalType optType) {
 			return isCompatible(fromType, optType.getWrappedType()) ||
 					fromType.getName().equals("null");
 		}
 
 		// Union types can accept any of their constituent types
-		if (toType instanceof UnionType) {
-			UnionType unionType = (UnionType) toType;
+		if (toType instanceof UnionType unionType) {
 			return unionType.canAccept(fromType);
 		}
 
@@ -874,12 +861,9 @@ public class TypeChecker implements ASTVisitor<Type> {
 	 * Juno requires explicit casting - no implicit conversions allowed.
 	 */
 	private Type getArithmeticResultType(Type leftType, Type rightType) {
-		if (!(leftType instanceof PrimitiveType) || !(rightType instanceof PrimitiveType)) {
+		if (!(leftType instanceof PrimitiveType left) || !(rightType instanceof PrimitiveType right)) {
 			return null;
 		}
-
-		PrimitiveType left = (PrimitiveType) leftType;
-		PrimitiveType right = (PrimitiveType) rightType;
 
 		if (!left.isNumeric() || !right.isNumeric()) {
 			return null;
@@ -899,12 +883,9 @@ public class TypeChecker implements ASTVisitor<Type> {
 	 * Check if two numeric types are compatible for comparison.
 	 */
 	private boolean isNumericCompatible(Type left, Type right) {
-		if (!(left instanceof PrimitiveType) || !(right instanceof PrimitiveType)) {
+		if (!(left instanceof PrimitiveType leftPrim) || !(right instanceof PrimitiveType rightPrim)) {
 			return false;
 		}
-
-		PrimitiveType leftPrim = (PrimitiveType) left;
-		PrimitiveType rightPrim = (PrimitiveType) right;
 
 		return leftPrim.isNumeric() && rightPrim.isNumeric();
 	}
@@ -968,13 +949,10 @@ public class TypeChecker implements ASTVisitor<Type> {
 
 		// Handle object type casts (for future use)
 		// For now, allow all object casts with runtime checking
-		if (!(fromType instanceof PrimitiveType) && !(toType instanceof PrimitiveType)) {
-			return true; // Object to object casts (implement proper inheritance checking later)
-		}
+		return !(fromType instanceof PrimitiveType) && !(toType instanceof PrimitiveType); // Object to object casts (implement proper inheritance checking later)
 
 		// Primitive to object or object to primitive casts
 		// Generally not allowed without boxing/unboxing (implement later if needed)
-		return false;
 	}
 
 	/**
