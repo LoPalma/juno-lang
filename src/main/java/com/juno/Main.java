@@ -34,7 +34,7 @@ public class Main {
 			if ("--ast-dump".equals(arg)) {
 				debugAST = true;
 			}
-			if ("--verbose".equals(arg) || "-v".equals(arg)) {
+			if ("--verbose".equals(arg) || "-V".equals(arg)) {
 				verbose = true;
 			}
 		}
@@ -43,15 +43,20 @@ public class Main {
 		boolean generateJasmin = "true".equals(System.getenv("JUNO_GENERATE_JASMIN"));
 
 		try {
+			long startTime = System.nanoTime();
+
 			ErrorCollector errorCollector = new ErrorCollector();
 			compile(sourceFile, errorCollector, debugAST, generateJasmin, verbose);
+
+			long endTime = System.nanoTime();
+			double durationMs = (endTime - startTime) / 1_000_000.0;
 
 			// Print all errors and warnings
 			errorCollector.printAll();
 
 			// Only print summary if compilation completed
 			if (!errorCollector.hasErrors() && verbose) {
-				System.out.println("Compilation completed successfully.");
+				System.out.printf("Compilation completed in %.2f ms%n", durationMs);
 			}
 
 			// Exit with error code if there were errors
@@ -76,24 +81,22 @@ public class Main {
 		String source = Files.readString(sourcePath);
 		String[] sourceLines = source.split("\n");
 
-		if (verbose) System.out.println("Compiling: " + sourceFile);
+		if (verbose) System.out.println("Compiling: " + sourceFile + "\n");
 
 		// Lexical Analysis
-		if (verbose) System.out.println("Phase 1: Lexical Analysis");
 		Lexer lexer = new Lexer(source, sourceFile, errorCollector);
 		var tokens = lexer.tokenize();
-		if (verbose) System.out.println("Found " + tokens.size() + " tokens");
+		if (verbose) System.out.println("-- Found " + tokens.size() + " tokens\n");
 
 		// Parsing - skip if lexical errors prevent meaningful parsing
-		if (verbose) System.out.println("Phase 2: Parsing");
 		if (errorCollector.hasErrors()) {
-			if (verbose) System.out.println("Skipping parsing due to lexical errors");
+			if (verbose) System.out.println("Skipping parsing due to lexical errors\n");
 			return;
 		}
 
 		Parser parser = new Parser(tokens, sourceFile, sourceLines, errorCollector);
 		Program program = parser.parseProgram();
-		if (verbose) System.out.println("Parsed " + program.getStatements().size() + " statements");
+		if (verbose) System.out.println("-- Parsed " + program.getStatements().size() + " statements");
 
 		// Print AST if debug flag is enabled
 		if (debugAST) {
@@ -104,7 +107,6 @@ public class Main {
 		}
 
 		// Type Checking
-		if (verbose) System.out.println("Phase 3: Type Checking");
 		if (errorCollector.hasErrors()) {
 			if (verbose) System.out.println("Skipping type checking due to previous errors");
 			return;
@@ -113,7 +115,6 @@ public class Main {
 		typeChecker.check(program);
 
 		// Code Generation
-		if (verbose) System.out.println("Phase 4: Code Generation");
 		if (errorCollector.hasErrors()) {
 			if (verbose) System.out.println("Skipping code generation due to previous errors");
 			return;
@@ -123,6 +124,12 @@ public class Main {
 			CodeGenerator codeGen = new CodeGenerator();
 			String outputClass = sourceFile.replace(".juno", "").replace(".jl", "");
 			codeGen.generate(program, outputClass, generateJasmin);
+			if (verbose) {
+				if (generateJasmin) {
+					System.out.println("Outputting to Jasmin file: " + outputClass.concat(".j"));
+				}
+				System.out.println("Outputting to class file: " + outputClass.concat(".class"));
+			}
 		} catch (Exception e) {
 			System.err.println("Code generation failed: " + e.getMessage());
 			if (System.getenv("JUNO_DEBUG") != null) {
