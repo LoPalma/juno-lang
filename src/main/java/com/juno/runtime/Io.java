@@ -1,7 +1,6 @@
 package com.juno.runtime;
 
 import java.io.*;
-import java.nio.file.*;
 import java.util.Scanner;
 
 /**
@@ -42,7 +41,6 @@ public class Io {
 		System.err.println(message);
 	}
 
-	// ===== FILE HANDLES =====
 
 	/**
 	 * Standard input stream handle.

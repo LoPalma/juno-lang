@@ -1,0 +1,5 @@
+import Io;
+
+void main() {
+	Io.println("Hello, world!");
+}

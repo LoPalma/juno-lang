@@ -8,7 +8,7 @@ public interface Type {
      * Get the name of this type.
      * @return type name
      */
-    String getName();
+    String name();
     
     /**
      * Check if this type is compatible with another type.
@@ -21,7 +21,7 @@ public interface Type {
      * Get the size of this type in bytes.
      * @return size in bytes
      */
-    int getSize();
+    int size();
     
     /**
      * Get the JVM type descriptor for this type.

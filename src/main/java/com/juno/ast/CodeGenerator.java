@@ -222,7 +222,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 
 		// For void methods, add return if missing
 		com.juno.types.Type returnType = funcDecl.returnType();
-		if (returnType.getName().equals("void")) {
+		if (returnType.name().equals("void")) {
 			methodGenerator.visitInsn(RETURN);
 			jasminInstruction("return");
 		}
@@ -268,7 +268,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		}
 		else {
 			// Local variable - handle as before
-			jasminComment("Local variable: " + varType.getName() + " " + varName);
+			jasminComment("Local variable: " + varType.name() + " " + varName);
 
 			// Assign local variable slot
 			localVariables.put(varName, nextLocalSlot);
@@ -282,7 +282,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 				// Add type conversion if needed between initializer and variable type
 				com.juno.types.Type initializerType = varDecl.initializer().getType();
 				if (initializerType != null && !initializerType.equals(varType)) {
-					jasminComment("Convert " + initializerType.getName() + " to " + varType.getName());
+					jasminComment("Convert " + initializerType.name() + " to " + varType.name());
 					generateTypeConversion(initializerType, varType);
 				}
 
@@ -342,7 +342,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		exprStmt.expression().accept(this);
 		// Pop the result only if the expression returns a value
 		Expression expr = exprStmt.expression();
-		if (expr.getType() != null && !"void".equals(expr.getType().getName())) {
+		if (expr.getType() != null && !"void".equals(expr.getType().name())) {
 			methodGenerator.visitInsn(POP);
 		}
 		return null;
@@ -731,7 +731,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 
 		// Add type conversion if needed between value and target variable
 		if (valueType != null && targetVarType != null && !valueType.equals(targetVarType)) {
-			jasminComment("Convert " + valueType.getName() + " to " + targetVarType.getName() + " for assignment");
+			jasminComment("Convert " + valueType.name() + " to " + targetVarType.name() + " for assignment");
 			generateTypeConversion(valueType, targetVarType);
 		}
 
@@ -806,10 +806,10 @@ public class CodeGenerator implements ASTVisitor<Void> {
 	@Override
 	public Void visitArrayLiteralExpression(ArrayLiteralExpression expr) {
 		ArrayType arrayType = (ArrayType) expr.getType();
-		com.juno.types.Type elementType = arrayType.getElementType();
+		com.juno.types.Type elementType = arrayType.elementType();
 		int arraySize = expr.getElements().size();
 
-		jasminComment("Array literal: " + arrayType.getName() + " with " + arraySize + " elements");
+		jasminComment("Array literal: " + arrayType.name() + " with " + arraySize + " elements");
 
 		// Push array size
 		methodGenerator.visitIntInsn(BIPUSH, arraySize);
@@ -817,7 +817,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 
 		// Create array of appropriate type
 		String elementJvmType = getJVMTypeDescriptor(elementType);
-		if (elementType instanceof PrimitiveType primType && !"string".equals(elementType.getName())) {
+		if (elementType instanceof PrimitiveType primType && !"string".equals(elementType.name())) {
 			int arrayTypeCode = getJVMArrayTypeCode(primType);
 			methodGenerator.visitIntInsn(NEWARRAY, arrayTypeCode);
 			jasminInstruction("newarray " + getJVMArrayTypeName(primType));
@@ -968,7 +968,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 
 	private String getJVMTypeDescriptor(com.juno.types.Type type) {
 		if (type instanceof PrimitiveType) {
-			return switch (type.getName()) {
+			return switch (type.name()) {
 				case "void" -> "V";
 				case "bool" -> "Z";
 				case "byte", "ubyte", "short", "ushort", "int", "uint" -> "I";  // Use int for all small integer types
@@ -977,7 +977,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 				case "double" -> "D";
 				case "char" -> "C";
 				case "string" -> "Ljava/lang/String;";
-				default -> throw new UnsupportedOperationException("Unsupported primitive type: " + type.getName());
+				default -> throw new UnsupportedOperationException("Unsupported primitive type: " + type.name());
 			};
 		}
 		else if (type instanceof ArrayType) {
@@ -995,7 +995,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 
 	private int getTypeSize(com.juno.types.Type type) {
 		if (type instanceof PrimitiveType) {
-			switch (type.getName()) {
+			switch (type.name()) {
 				case "long":
 				case "ulong":
 				case "double":
@@ -1015,7 +1015,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		}
 
 		if (type instanceof PrimitiveType) {
-			switch (type.getName()) {
+			switch (type.name()) {
 				case "long":
 				case "ulong":
 					methodGenerator.visitVarInsn(LLOAD, slot);
@@ -1057,7 +1057,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		}
 
 		if (type instanceof PrimitiveType) {
-			switch (type.getName()) {
+			switch (type.name()) {
 				case "bool":
 				case "byte":
 				case "ubyte":
@@ -1104,7 +1104,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 
 	private void generateDefaultValue(com.juno.types.Type type) {
 		if (type instanceof PrimitiveType) {
-			switch (type.getName()) {
+			switch (type.name()) {
 				case "bool":
 				case "byte":
 				case "ubyte":
@@ -1143,7 +1143,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 
 	private void generateReturn(com.juno.types.Type returnType) {
 		if (returnType instanceof PrimitiveType) {
-			switch (returnType.getName()) {
+			switch (returnType.name()) {
 				case "void":
 					methodGenerator.visitInsn(RETURN);
 					jasminInstruction("return");
@@ -1354,7 +1354,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		}
 
 		// If types are the same, no conversion needed
-		if (fromType.getName().equals(toType.getName())) {
+		if (fromType.name().equals(toType.name())) {
 			return false;
 		}
 
@@ -1374,8 +1374,8 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		}
 
 		// If types are the same, no conversion needed
-		String fromTypeName = fromType.getName();
-		String toTypeName = toType.getName();
+		String fromTypeName = fromType.name();
+		String toTypeName = toType.name();
 
 		if (fromTypeName.equals(toTypeName)) {
 			return; // No conversion needed
@@ -1491,6 +1491,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 			methodGenerator.visitInsn(I2S);
 			jasminInstruction("i2s ; " + fromTypeName + " to " + toTypeName);
 		}
+		// TODO: string to numeric type conversion and viceversa
 		// No conversion needed for same-sized integer types (int/uint, long/ulong, etc.)
 	}
 
@@ -1583,7 +1584,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		// This is a simplified approach - a full union type would need runtime type tags
 
 		if (fromType instanceof PrimitiveType) {
-			String fromTypeName = fromType.getName();
+			String fromTypeName = fromType.name();
 
 			// Box primitives to their wrapper types
 			switch (fromTypeName) {
@@ -1684,7 +1685,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		if (!(type instanceof PrimitiveType)) {
 			return false;
 		}
-		String typeName = type.getName();
+		String typeName = type.name();
 		return typeName.equals("int") || typeName.equals("uint") ||
 				typeName.equals("byte") || typeName.equals("ubyte") ||
 				typeName.equals("short") || typeName.equals("ushort");
@@ -1694,7 +1695,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		if (!(type instanceof PrimitiveType)) {
 			return false;
 		}
-		String typeName = type.getName();
+		String typeName = type.name();
 		return typeName.equals("long") || typeName.equals("ulong");
 	}
 
@@ -1816,7 +1817,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 			initializer.accept(this);
 
 			// Add type conversion if needed
-			if (varType instanceof PrimitiveType && varType.getName().equals("float") &&
+			if (varType instanceof PrimitiveType && varType.name().equals("float") &&
 					initializer instanceof LiteralExpression) {
 				Object value = ((LiteralExpression) initializer).getValue();
 				if (value instanceof Double) {
@@ -1870,7 +1871,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 		methodGenerator.visitCode();
 
 		// Determine the return type of Juno main
-		boolean isVoidMain = junoMainReturnType != null && junoMainReturnType.getName().equals("void");
+		boolean isVoidMain = junoMainReturnType != null && junoMainReturnType.name().equals("void");
 		boolean isLongMain = isLongType(junoMainReturnType);
 
 		String callDescriptor;
@@ -1934,7 +1935,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 	 * Get JVM array type code for primitive types used with NEWARRAY instruction.
 	 */
 	private int getJVMArrayTypeCode(PrimitiveType primType) {
-		switch (primType.getName()) {
+		switch (primType.name()) {
 			case "bool":
 				return T_BOOLEAN;
 			case "byte":
@@ -1956,7 +1957,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 			case "char":
 				return T_CHAR;
 			default:
-				throw new UnsupportedOperationException("Unsupported primitive array type: " + primType.getName());
+				throw new UnsupportedOperationException("Unsupported primitive array type: " + primType.name());
 		}
 	}
 
@@ -1964,7 +1965,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 	 * Get JVM array type name for Jasmin assembly.
 	 */
 	private String getJVMArrayTypeName(PrimitiveType primType) {
-		switch (primType.getName()) {
+		switch (primType.name()) {
 			case "bool":
 				return "boolean";
 			case "byte":
@@ -1986,7 +1987,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 			case "char":
 				return "char";
 			default:
-				throw new UnsupportedOperationException("Unsupported primitive array type: " + primType.getName());
+				throw new UnsupportedOperationException("Unsupported primitive array type: " + primType.name());
 		}
 	}
 
@@ -1995,7 +1996,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 	 */
 	private void generateArrayStore(com.juno.types.Type elementType) {
 		if (elementType instanceof PrimitiveType primType) {
-			switch (primType.getName()) {
+			switch (primType.name()) {
 				case "bool":
 					methodGenerator.visitInsn(BASTORE); // boolean uses byte array operations
 					jasminInstruction("bastore");
@@ -2037,7 +2038,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 					jasminInstruction("aastore");
 					break;
 				default:
-					throw new UnsupportedOperationException("Unsupported array element type: " + primType.getName());
+					throw new UnsupportedOperationException("Unsupported array element type: " + primType.name());
 			}
 		}
 		else {
@@ -2052,7 +2053,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 	 */
 	private void generateArrayLoad(com.juno.types.Type elementType) {
 		if (elementType instanceof PrimitiveType primType) {
-			switch (primType.getName()) {
+			switch (primType.name()) {
 				case "bool":
 					methodGenerator.visitInsn(BALOAD); // boolean uses byte array operations
 					jasminInstruction("baload");
@@ -2094,7 +2095,7 @@ public class CodeGenerator implements ASTVisitor<Void> {
 					jasminInstruction("aaload");
 					break;
 				default:
-					throw new UnsupportedOperationException("Unsupported array element type: " + primType.getName());
+					throw new UnsupportedOperationException("Unsupported array element type: " + primType.name());
 			}
 		}
 		else {

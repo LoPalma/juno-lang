@@ -1,0 +1,464 @@
+#!/usr/bin/env bash
+
+VERSION="0.3.3-alpha"
+
+HELLO=\
+'import Io.{println};
+void main() {
+  Io.println("Hello, Juno!");
+}'
+
+# Determine installation paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JUNOC="$SCRIPT_DIR/junoc"
+
+# Check if we're in development or installed mode
+if [ -d "$SCRIPT_DIR/target/classes" ]; then
+  JUNO_CLASSES="$SCRIPT_DIR/target/classes"
+else
+  if [ -d "$SCRIPT_DIR/lib" ]; then
+    JUNO_CLASSES="$SCRIPT_DIR/lib"
+  elif [ -d "$SCRIPT_DIR/../juno-lib" ]; then
+    JUNO_CLASSES="$SCRIPT_DIR/../juno-lib"
+  else
+    JUNO_CLASSES="$HOME/.local/share/juno/lib"
+  fi
+fi
+
+# Project defaults
+DEF_NAME="My Project"
+DEF_DESC="My description"
+DEF_VER="0.0.1"
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+show_help() {
+  cat <<EOF
+JPM -- Juno Package Manager
+
+Usage:
+  jpm -h / --help
+  jpm --version
+  jpm <command> [arguments...] [options...]
+
+Examples:
+  jpm init my-project
+  jpm build src/main.juno
+  jpm run src/main.juno
+  jpm update
+
+Further help:
+  jpm help commands  -> show all available commands
+  jpm help <command> -> show detailed help for a command
+EOF
+}
+
+show_all_commands() {
+  cat <<EOF
+JPM Execution Commands:
+  build [file.juno] [options...]  -> compile file.juno to file.class
+  exec  <class> [args...]         -> run compiled class
+  run   [file.juno] [options...]  -> compile and run file.juno
+
+JPM Project Commands:
+  init <directory>                -> initialize new project
+  version                         -> show Juno version
+  update                          -> update Juno installation
+
+JPM Package Commands (Coming Soon):
+  sync                            -> sync dependencies from juno.json (!)
+  install <package>               -> install a package (!)
+  remove <package>                -> remove a package (!)
+  search <package>                -> search for packages (!)
+  test [name] [options...]        -> run tests (!)
+
+Entries marked with (!) are not implemented yet.
+
+For detailed help on a command, use: jpm help <command>
+EOF
+}
+
+show_command_help() {
+  local cmd="$1"
+
+  case "$cmd" in
+    build)
+      cat <<EOF
+Command: jpm build
+
+Usage:
+  jpm build <file.juno> [options...]
+
+Description:
+  Compiles one or more Juno source files to JVM bytecode (.class files).
+
+Arguments:
+  file.juno           One or more source files to compile
+
+Options:
+  -n, --no-class      Delete .class file after compilation
+  -j, --jasmin        Generate Jasmin assembly output
+  -a, --ast-dump      Dump the Abstract Syntax Tree (!)
+
+Examples:
+  jpm build src/main.juno
+  jpm build src/*.juno
+  jpm build main.juno --jasmin
+
+Output:
+  Creates .class files in the same directory as source files
+EOF
+      ;;
+
+    exec)
+      cat <<EOF
+Command: jpm exec
+
+Usage:
+  jpm exec <classname> [arguments...]
+
+Description:
+  Executes a compiled Juno class with proper classpath configuration.
+
+Arguments:
+  classname           Name of the class to execute (without .class extension)
+  arguments           Optional arguments passed to the program
+
+Examples:
+  jpm exec Main
+  jpm exec Calculator --debug
+  jpm exec MyApp arg1 arg2
+
+Notes:
+  - The class must already be compiled (.class file must exist)
+  - Classpath automatically includes current directory and stdlib
+EOF
+      ;;
+
+    run)
+      cat <<EOF
+Command: jpm run
+
+Usage:
+  jpm run <file.juno> [options...]
+
+Description:
+  Compiles and immediately executes a Juno source file.
+  This is a convenience command equivalent to: jpm build && jpm exec
+
+Arguments:
+  file.juno           Juno source file to compile and run
+  options             Compiler options (see jpm help build)
+
+Examples:
+  jpm run src/main.juno
+  jpm run examples/hello.juno
+  jpm run test.juno --debug
+
+Notes:
+  - Automatically compiles before running
+  - Only the last file specified is executed
+EOF
+      ;;
+
+    init)
+      cat <<EOF
+Command: jpm init
+
+Usage:
+  jpm init <directory>
+
+Description:
+  Initializes a new Juno project with standard directory structure
+  and project manifest (juno.json).
+
+Arguments:
+  directory           Directory to create project in (will be created if it doesn't exist)
+
+Creates:
+  <directory>/
+  ├── src/
+  │   └── main.juno       Hello World example
+  └── juno.json           Project manifest
+
+Interactive Prompts:
+  - Module name
+  - Module version (default: 0.0.1)
+  - Description
+  - Author (default: current user)
+
+Examples:
+  jpm init my-project
+  jpm init .              # Initialize in current directory
+EOF
+      ;;
+
+    update)
+      cat <<EOF
+Command: jpm update
+
+Usage:
+  jpm update
+
+Description:
+  Updates Juno to the latest version by downloading and running
+  the installation script from the official repository.
+
+Examples:
+  jpm update
+
+Notes:
+  - Requires internet connection
+  - Will overwrite current installation
+  - Preserves user projects and configurations
+EOF
+      ;;
+
+    version)
+      cat <<EOF
+Command: jpm version
+
+Usage:
+  jpm version
+
+Description:
+  Displays the current version of Juno.
+
+Examples:
+  jpm version
+EOF
+      ;;
+
+    sync|install|remove|search|test)
+      cat <<EOF
+Command: jpm $cmd
+
+Status: Not yet implemented
+
+Description:
+  This command is planned for a future release of Juno.
+
+Stay tuned for updates!
+EOF
+      ;;
+
+    *)
+      echo "Error: Unknown command '$cmd'"
+      echo "Run 'jpm help commands' to see all available commands."
+      exit 1
+      ;;
+  esac
+}
+
+# Parse files and flags from arguments
+parse_args() {
+  FILES=()
+  FLAGS=()
+
+  for arg in "$@"; do
+    if [[ "$arg" == -* ]]; then
+      FLAGS+=("$arg")
+    else
+      FILES+=("$arg")
+    fi
+  done
+}
+
+# ============================================================================
+# COMMAND IMPLEMENTATIONS
+# ============================================================================
+
+cmd_init() {
+  if [ $# -ne 1 ]; then
+    echo "Error: exactly one directory path required"
+    echo "Usage: jpm init <directory>"
+    echo "Run 'jpm help init' for more information."
+    exit 1
+  fi
+
+  PROJECT_DIR="$1"
+
+  if [ -d "$PROJECT_DIR" ]; then
+    if [ -z "$(find "$PROJECT_DIR" -mindepth 1 -print -quit)" ]; then
+      cd "$PROJECT_DIR" || exit
+    else
+      echo "Error: Directory '$PROJECT_DIR' exists and is not empty"
+      exit 1
+    fi
+  fi
+
+  # Create project structure
+  mkdir -p "$PROJECT_DIR/src"
+  echo "$HELLO" > "$PROJECT_DIR/src/main.juno"
+
+  # Get user input
+  echo "Creating project manifest..."
+  echo ""
+  printf "Module name: "
+  read -r name
+  printf "Module version (0.0.1): "
+  read -r version
+  printf "Module description: "
+  read -r desc
+  printf "Module author ($USER): "
+  read -r author
+
+  # Apply defaults
+  name=${name:-$DEF_NAME}
+  version=${version:-$DEF_VER}
+  desc=${desc:-$DEF_DESC}
+  author=${author:-$USER}
+
+  # Generate JSON with jq
+  jq -n \
+    --arg name "$name" \
+    --arg version "$version" \
+    --arg entry "src/main.juno" \
+    --arg desc "$desc" \
+    --arg author "$author" \
+    '{
+      name: $name,
+      version: $version,
+      entry: $entry,
+      description: $desc,
+      author: $author
+    }' > "$PROJECT_DIR/juno.json"
+
+  if [ "$PROJECT_DIR" = "." ]; then
+    echo "✓ Created project '$name' in current directory"
+  else
+    echo "✓ Created project '$name' in $PROJECT_DIR"
+  fi
+  echo ""
+  echo "Next steps:"
+  echo "  cd $PROJECT_DIR"
+  echo "  jpm run src/main.juno"
+}
+
+cmd_build() {
+  if [ $# -lt 1 ]; then
+    echo "Error: No source files provided"
+    echo "Usage: jpm build <file.juno> [options...]"
+    echo "Run 'jpm help build' for more information."
+    exit 1
+  fi
+
+  parse_args "$@"
+
+  if [ ${#FILES[@]} -eq 0 ]; then
+    echo "Error: No source files provided"
+    exit 1
+  fi
+
+  for f in "${FILES[@]}"; do
+    "$JUNOC" "$f" "${FLAGS[@]}" || exit 1
+  done
+}
+
+cmd_run() {
+  if [ $# -lt 1 ]; then
+    echo "Error: No source files provided"
+    echo "Usage: jpm run <file.juno> [options...]"
+    echo "Run 'jpm help run' for more information."
+    exit 1
+  fi
+
+  parse_args "$@"
+
+  if [ ${#FILES[@]} -eq 0 ]; then
+    echo "Error: No source files provided"
+    exit 1
+  fi
+
+  # Compile all files first
+  for f in "${FILES[@]}"; do
+    "$JUNOC" "$f" "${FLAGS[@]}" || exit 1
+  done
+
+  # Run the last compiled program
+  BASENAME="${FILES[-1]}"
+  BASENAME="${BASENAME%.juno}"
+  BASENAME="${BASENAME%.jl}"
+
+  java -cp ".:$JUNO_CLASSES" "$BASENAME"
+}
+
+cmd_exec() {
+  if [ $# -lt 1 ]; then
+    echo "Error: No class name provided"
+    echo "Usage: jpm exec <classname> [arguments...]"
+    echo "Run 'jpm help exec' for more information."
+    exit 1
+  fi
+
+  CLASSNAME="$1"
+  shift
+
+  java -cp ".:$JUNO_CLASSES" "$CLASSNAME" "$@"
+}
+
+cmd_version() {
+  echo "Juno version $VERSION"
+  echo "(C) 2025 Leonardo Palma"
+}
+
+cmd_update() {
+  echo "Updating Juno to latest version..."
+  bash <(curl -fsSL https://raw.githubusercontent.com/LoPalma/juno-lang/main/install.sh)
+}
+
+cmd_not_implemented() {
+  echo "Error: Command '$1' is not yet implemented"
+  echo "This feature is planned for a future release."
+  exit 1
+}
+
+# ============================================================================
+# MAIN COMMAND DISPATCHER
+# ============================================================================
+
+if [ $# -lt 1 ]; then
+  show_help
+  exit 1
+fi
+
+COMMAND="$1"
+shift
+
+case "$COMMAND" in
+  # Help commands
+  help|-h|--help)
+    if [ $# -eq 0 ]; then
+      show_help
+    else
+      SUBCOMMAND="$1"
+      if [ "$SUBCOMMAND" = "commands" ]; then
+        show_all_commands
+      else
+        show_command_help "$SUBCOMMAND"
+      fi
+    fi
+    ;;
+
+  # Core commands
+  init)      cmd_init "$@" ;;
+  build)     cmd_build "$@" ;;
+  run)       cmd_run "$@" ;;
+  exec)      cmd_exec "$@" ;;
+  version)   cmd_version ;;
+  update)    cmd_update ;;
+
+  # Not yet implemented
+  sync|install|remove|search|test)
+    cmd_not_implemented "$COMMAND"
+    ;;
+
+  # Unknown command
+  *)
+    echo "Error: Unknown command '$COMMAND'"
+    echo "Run 'jpm help commands' to see all available commands."
+    exit 1
+    ;;
+esac

@@ -31,8 +31,8 @@ public class SpecialTypes {
         }
         
         @Override
-        public String getName() {
-            return inferredType != null ? inferredType.getName() : "auto";
+        public String name() {
+            return inferredType != null ? inferredType.name() : "auto";
         }
         
         @Override
@@ -44,8 +44,8 @@ public class SpecialTypes {
         }
         
         @Override
-        public int getSize() {
-            return inferredType != null ? inferredType.getSize() : 0;
+        public int size() {
+            return inferredType != null ? inferredType.size() : 0;
         }
         
         @Override
@@ -69,23 +69,23 @@ public class SpecialTypes {
         private AnyType() {}
         
         @Override
-        public String getName() {
+        public String name() {
             return "any";
         }
         
         @Override
         public boolean isCompatibleWith(Type other) {
             // 'any' is compatible with all types except void
-            return !other.getName().equals("void");
+            return !other.name().equals("void");
         }
         
         public boolean canAccept(Type type) {
             // 'any' can accept all types except void
-            return !type.getName().equals("void");
+            return !type.name().equals("void");
         }
         
         @Override
-        public int getSize() {
+        public int size() {
             // 'any' needs maximum space + type tag
             return 16; // Generous space for any value + type information
         }

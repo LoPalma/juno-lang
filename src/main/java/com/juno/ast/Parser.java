@@ -340,7 +340,7 @@ public class Parser {
 		// Back up one token to see the context before *
 		int prevIndex = current - 2;
 		if (prevIndex < 0) {
-			return false; // At beginning, must be dereference
+			return false; // At beginning, must be dereferenced
 		}
 
 		Token prevToken = tokens.get(prevIndex);
@@ -573,8 +573,16 @@ public class Parser {
 			do {
 				Token paramTypeToken = consumeType("Expected parameter type.");
 				Type paramType = getTypeFromToken(paramTypeToken);
+
+				// handle array suffixes: [, ].
+				while (match(TokenType.LEFT_BRACKET)) {
+					consume(TokenType.RIGHT_BRACKET, "Expected ']' after '[' in array type.");
+					paramType = new ArrayType(paramType);
+				}
+
 				Token paramNameToken = consume(TokenType.IDENTIFIER, "Expected parameter name.");
 				String paramName = paramNameToken.getLexeme();
+
 				parameters.add(new FunctionDeclaration.Parameter(paramType, paramName));
 			} while (match(TokenType.COMMA));
 		}

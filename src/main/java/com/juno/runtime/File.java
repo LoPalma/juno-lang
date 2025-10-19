@@ -1,6 +1,6 @@
 package com.juno.runtime;
 
-// ===== FILE OPERATIONS (nested module) =====
+// ===== FILE OPERATIONS =====
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 /**
- * Nested File module for file operations.
+ * File module for file operations.
  * Provides smart file handling similar to Python.
  */
 public class File {

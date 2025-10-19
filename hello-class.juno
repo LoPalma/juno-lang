@@ -1,0 +1,9 @@
+import Io;
+
+module Hello {
+ 
+	public void main(string[] args) {
+		Io.println("Hello, world!");	
+	}
+	
+}

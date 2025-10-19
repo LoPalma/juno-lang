@@ -127,7 +127,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 
 			// Handle auto type inference
 			if (declaredType instanceof SpecialTypes.AutoType autoType) {
-				if (initType != null && !initType.getName().equals("void")) {
+				if (initType != null && !initType.name().equals("void")) {
 					autoType.inferType(initType);
 					finalType = initType;
 				}
@@ -142,7 +142,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 			// Handle any type - can accept any value
 			else if (declaredType instanceof SpecialTypes.AnyType) {
 				// 'any' can accept any non-void type
-				if (initType != null && initType.getName().equals("void")) {
+				if (initType != null && initType.name().equals("void")) {
 					errorCollector.addError(new CompilerError(
 							"Cannot assign void expression to 'any' variable '" + varName + "'",
 							ErrorCode.TYPE_MISMATCH,
@@ -373,7 +373,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 		}
 		else {
 			// Return with no value - function should return void
-			if (!currentFunctionReturnType.getName().equals("void")) {
+			if (!currentFunctionReturnType.name().equals("void")) {
 				errorCollector.addError(new CompilerError(
 						"Function with return type " + currentFunctionReturnType + " must return a value",
 						ErrorCode.MISSING_RETURN_VALUE,
@@ -655,7 +655,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 			));
 		}
 
-		Type elementType = array.getElementType();
+		Type elementType = array.elementType();
 		expr.setType(elementType);
 		return elementType;
 	}
@@ -704,7 +704,7 @@ public class TypeChecker implements ASTVisitor<Type> {
 			return PrimitiveType.INT; // fallback
 		}
 
-		Type pointedType = pointerType.getPointedType();
+		Type pointedType = pointerType.pointedType();
 		expr.setType(pointedType);
 		return pointedType;
 	}
@@ -756,13 +756,13 @@ public class TypeChecker implements ASTVisitor<Type> {
 
 		// Any type can accept anything except void
 		if (toType instanceof SpecialTypes.AnyType) {
-			return !fromType.getName().equals("void");
+			return !fromType.name().equals("void");
 		}
 
 		// Optional types can accept their wrapped type or null
 		if (toType instanceof OptionalType optType) {
-			return isCompatible(fromType, optType.getWrappedType()) ||
-					fromType.getName().equals("null");
+			return isCompatible(fromType, optType.wrappedType()) ||
+					fromType.name().equals("null");
 		}
 
 		// Union types can accept any of their constituent types
@@ -829,23 +829,21 @@ public class TypeChecker implements ASTVisitor<Type> {
 			return null;
 		}
 
-		switch (operator) {
-			case "-":
-			case "+":
+		return switch (operator) {
+			case "-", "+" -> {
 				if (((PrimitiveType) operandType).isNumeric()) {
-					return operandType;
+					yield operandType;
 				}
-				return null;
-
-			case "!":
+				yield null;
+			}
+			case "!" -> {
 				if (isCompatible(operandType, PrimitiveType.BOOL)) {
-					return PrimitiveType.BOOL;
+					yield PrimitiveType.BOOL;
 				}
-				return null;
-
-			default:
-				return null;
-		}
+				yield null;
+			}
+			default -> null;
+		};
 	}
 
 	/**
@@ -921,8 +919,8 @@ public class TypeChecker implements ASTVisitor<Type> {
 			return false;
 		}
 
-		String fromTypeName = fromType.getName();
-		String toTypeName = toType.getName();
+		String fromTypeName = fromType.name();
+		String toTypeName = toType.name();
 
 		// Can't cast from/to void
 		if ("void".equals(fromTypeName) || "void".equals(toTypeName)) {

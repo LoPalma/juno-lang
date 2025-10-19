@@ -21,9 +21,9 @@ public class UnionType implements Type {
     }
     
     @Override
-    public String getName() {
+    public String name() {
         return types.stream()
-                   .map(Type::getName)
+                   .map(Type::name)
                    .collect(Collectors.joining("|"));
     }
     
@@ -47,9 +47,9 @@ public class UnionType implements Type {
     }
     
     @Override
-    public int getSize() {
+    public int size() {
         // Union types need space for the largest possible value + type tag
-        int maxSize = types.stream().mapToInt(Type::getSize).max().orElse(4);
+        int maxSize = types.stream().mapToInt(Type::size).max().orElse(4);
         return maxSize + 4; // +4 bytes for type tag
     }
     
@@ -61,7 +61,7 @@ public class UnionType implements Type {
     
     @Override
     public String toString() {
-        return getName();
+        return name();
     }
     
     @Override

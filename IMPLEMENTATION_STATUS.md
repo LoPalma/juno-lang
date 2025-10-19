@@ -3,7 +3,7 @@
 ## Current Implementation (✅ Working)
 
 ### 1. **Core Language Features**
-- ✅ **File Extension**: `.cl` (C-Like) files
+- ✅ **File Extension**: `.juno` files
 - ✅ **Comments**: Single-line (`//`) and block (`/* */`)
 - ✅ **Identifiers**: C-style identifiers with underscores
 - ✅ **Keywords**: Full set of reserved words
@@ -15,14 +15,13 @@
   - Floating point: `float`, `double`
   - Other: `char`, `string`, `bool`, `void`
 - ✅ **Special Types**: `auto`, `any`, `optional`
-- ✅ **Union Types**: `string|int`, `int|float` etc.
-- ✅ **Type Aliases**: `type MyInt = int;`
+- ✅ **Union Types**: `string|int`, `int|float` etc.`
 - ✅ **Type Inference**: Works with `auto` keyword
 - ✅ **Strong Static Typing**: Explicit type declarations required
 
 ### 3. **Literals**
-- ✅ **Integer Literals**: `42`, `123L`, `456U`
-- ✅ **Float Literals**: `3.14`, `2.5f`, `1.0d`
+- ✅ **Integer Literals**: `42`
+- ✅ **Float Literals**: `3.14`
 - ✅ **String Literals**: `"Hello World"` with escape sequences
 - ✅ **Character Literals**: `'a'`, `'\n'`, `'\\'`
 - ✅ **Boolean Literals**: `true`, `false`
@@ -32,8 +31,8 @@
 - ✅ **Comparison**: `<`, `<=`, `>`, `>=`, `==`, `!=`
 - ✅ **Logical**: `&&`, `||`, `!`
 - ✅ **Assignment**: `=`
-- ✅ **String Concatenation**: `^^` (unique to Juno)
-- ✅ **Type Casting**: `<type>(expr)` and `type<expr>` (both syntaxes)
+- ✅ **String Concatenation**: `^^` (unique to Juno?)
+- ✅ **Type Casting**: `type<expr>`
 
 ### 5. **Expressions**
 - ✅ **Binary Expressions**: All operators with correct precedence
@@ -45,12 +44,12 @@
 - ✅ **Type Casting**: Both cast syntaxes work
 
 ### 6. **Statements**
-- ✅ **Variable Declarations**: `int x;`, `int y = 5;`
+- ✅ **Variable Declarations**: `int x;`, `int y = 5;` (note: `int x;` syntax is broken)
 - ✅ **Expression Statements**: `function();`
 - ✅ **Block Statements**: `{ ... }`
 - ✅ **If Statements**: `if (cond) stmt` and `if (cond) stmt else stmt`
 - ✅ **While Loops**: `while (condition) statement`
-- ✅ **For-in Loops**: `for type var in iterable { }`
+- ✅ **For-in Loops**: `for type var in iterable { }` (not really, codegen not supported yet)
 - ✅ **Return Statements**: `return;`, `return expr;`
 
 ### 7. **Functions**
@@ -81,7 +80,7 @@
 - ✅ **Parsing**: Recursive descent parser
 - ✅ **Type Checking**: Comprehensive type system
 - ✅ **Code Generation**: JVM bytecode via ASM library
-- ✅ **Error Handling**: Line/column error reporting
+- ✅ **Error Handling**: Line/column error reporting (sometimes it works...)
 - ✅ **Jasmin Output**: Optional assembly generation
 
 ---

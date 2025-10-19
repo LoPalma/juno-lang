@@ -250,6 +250,8 @@ record VariableDeclaration(Type type, String name, Expression initializer, boole
 /**
  * Function declaration AST node with parameters and body.
  */
+
+// TODO: fix array parameters not working
 record FunctionDeclaration(Type returnType, String name, List<Parameter> parameters, BlockStatement body,
 													 boolean isPublic, int line, int column) implements Statement {
 	public record Parameter(Type type, String name) {
