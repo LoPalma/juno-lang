@@ -1,120 +1,85 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-INSTALL_LOCAL=true
+set -e
+
+VERSION="0.3.3-alpha"
 REPO="LoPalma/juno-lang"
+ARCHIVE="juno-$VERSION-linux.tar.gz"
+DOWNLOAD_URL="https://github.com/$REPO/releases/download/v$VERSION/$ARCHIVE"
 
-echo "Juno installer"
+echo "=== Juno Installer ==="
+echo "Version: $VERSION"
 echo ""
 
-# Ask about local installation
-while true; do
-  echo "Would you like to install Juno locally? [Y/n]"
-  read answer
-  case "$answer" in
-    [Yy]* | "" )
-      INSTALL_LOCAL=true
-      break
-      ;;
-    [Nn]* )
-      INSTALL_LOCAL=false
-      break
-      ;;
-    * )
-      echo "Valid answers: y / n"
-      ;;
-  esac
-done
+# Prompt helper
+prompt() {
+    local message=$1
+    local default=$2
+    read -p "$message [$default] " response
+    response="${response:-$default}"
+    echo "$response"
+}
 
-# Set installation directory
-JUNO_DIR=""
-if [ "$INSTALL_LOCAL" = true ]; then
-  JUNO_DIR="$HOME/.local/bin"
+# Ask installation type
+INSTALL_TYPE=$(prompt "Install system-wide or locally? (system/local)" "local")
+
+if [[ "$INSTALL_TYPE" == "system" ]]; then
+    INSTALL_DIR="/opt/juno"
 else
-  JUNO_DIR="/usr/local/bin"
+    INSTALL_DIR="$HOME/.local/juno"
 fi
 
-# Final review
+# Ask about symlinks
+CREATE_SYMLINKS=$(prompt "Create symlinks to /usr/local/bin? (Y/n)" "Y")
+
+# Confirm
 echo ""
-echo "***Final review of options***"
+echo "Installation summary:"
+echo "  Version:     $VERSION"
+echo "  Install dir: $INSTALL_DIR"
+echo "  Symlinks:    $CREATE_SYMLINKS"
 echo ""
-echo "Installation directory: $JUNO_DIR"
-echo ""
+read -p "Proceed with installation? [Y/n] " CONFIRM
+CONFIRM="${CONFIRM:-Y}"
 
-# Confirm installation
-while true; do
-  echo "Do you wish to proceed? [Y/n]"
-  read answer
-  case "$answer" in
-    [Yy]* | "" )
-      break
-      ;;
-    [Nn]* )
-      echo "Aborting installation. No files installed."
-      exit 0
-      ;;
-    * )
-      echo "Valid answers: y / n"
-      ;;
-  esac
-done
-
-echo ""
-echo "Initiating installation..."
-
-# Check if we need sudo for non-local install
-SUDO=""
-if [ "$INSTALL_LOCAL" = false ]; then
-  SUDO="sudo"
-fi
-
-# Detect OS
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-
-# Download latest release
-echo "Downloading Juno from GitHub..."
-RELEASE_URL="https://github.com/$REPO/releases/download/v0.3.0-alpha/juno-${OS}.tar.gz"
-
-curl -fsSL "$RELEASE_URL" -o /tmp/juno.tar.gz || {
-  echo "Error: Failed to download Juno from $RELEASE_URL"
-  echo "Please check that a release exists for your platform."
-  exit 1
-}
-
-# Create installation directory
-$SUDO mkdir -p "$JUNO_DIR"
-
-# Extract files
-echo "Extracting files..."
-cd /tmp
-tar -xzf juno.tar.gz || {
-  echo "Error: Failed to extract archive"
-  rm /tmp/juno.tar.gz
-  exit 1
-}
-
-# Install files
-echo "Installing Juno..."
-$SUDO cp -r juno/* "$JUNO_DIR/"
-$SUDO chmod +x "$JUNO_DIR/juno"
-if [ -f "$JUNO_DIR/junoc" ]; then
-  $SUDO chmod +x "$JUNO_DIR/junoc"
-fi
-
-# Cleanup
-rm -rf /tmp/juno /tmp/juno.tar.gz
-
-echo ""
-echo "Installation complete!"
-echo ""
-echo "Juno has been installed to: $JUNO_DIR/juno"
-
-# Check if directory is in PATH
-if [[ ":$PATH:" != *":$JUNO_DIR:"* ]]; then
-  echo ""
-  echo "WARNING: $JUNO_DIR is not in your PATH."
-  echo "Add this line to your ~/.bashrc or ~/.zshrc:"
-  echo "  export PATH=\"\$PATH:$JUNO_DIR\""
+if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+    echo "Installation cancelled."
+    exit 0
 fi
 
 echo ""
-echo "Try running: juno help"
+echo "Downloading release..."
+TMP_DIR=$(mktemp -d)
+cd "$TMP_DIR"
+curl -LO "$DOWNLOAD_URL"
+
+echo "Extracting archive..."
+tar -xzf "$ARCHIVE"
+
+cd "juno-$VERSION"
+
+echo "Installing to $INSTALL_DIR..."
+mkdir -p "$INSTALL_DIR"
+cp -r . "$INSTALL_DIR"
+
+if [[ "$CREATE_SYMLINKS" =~ ^[Yy]$ ]]; then
+    echo "Creating symlinks in /usr/local/bin..."
+    sudo ln -sf "$INSTALL_DIR/junoc" /usr/local/bin/junoc
+    sudo ln -sf "$INSTALL_DIR/jpm" /usr/local/bin/jpm
+fi
+
+echo ""
+echo "Cleaning up..."
+cd ~
+rm -rf "$TMP_DIR"
+
+echo ""
+echo "✅ Installation complete!"
+echo "To uninstall, remove: $INSTALL_DIR"
+if [[ "$CREATE_SYMLINKS" =~ ^[Yy]$ ]]; then
+    echo "And delete symlinks in /usr/local/bin (junoc, jpm)"
+fi
+echo ""
+echo "Try running:"
+echo "  junoc examples/hello.juno"
+echo ""

@@ -69,7 +69,7 @@ while [[ $# -gt 0 ]]; do
       echo "Supported file extensions: .jl, .juno"
       exit 0
       ;;
-    --version)
+    -v|--version)
     	echo "Junoc (Juno Compiler) $VERSION, (C) Leonardo Palma 2025"
     	exit 0
     	;;

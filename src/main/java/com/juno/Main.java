@@ -86,7 +86,7 @@ public class Main {
 		// Lexical Analysis
 		Lexer lexer = new Lexer(source, sourceFile, errorCollector);
 		var tokens = lexer.tokenize();
-		if (verbose) System.out.println("-- Found " + tokens.size() + " tokens\n");
+		if (verbose) System.out.println("-- Found " + tokens.size() + " tokens");
 
 		// Parsing - skip if lexical errors prevent meaningful parsing
 		if (errorCollector.hasErrors()) {
@@ -96,7 +96,7 @@ public class Main {
 
 		Parser parser = new Parser(tokens, sourceFile, sourceLines, errorCollector);
 		Program program = parser.parseProgram();
-		if (verbose) System.out.println("-- Parsed " + program.getStatements().size() + " statements");
+		if (verbose) System.out.println("-- Parsed " + program.getStatements().size() + " statements\n");
 
 		// Print AST if debug flag is enabled
 		if (debugAST) {
